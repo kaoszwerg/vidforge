@@ -58,6 +58,7 @@ pub fn run() {
             commands::get_settings,
             commands::update_settings,
             commands::discover_ffmpeg,
+            commands::install_ffmpeg,
             commands::media::scan_folder,
             commands::media::probe_media,
             commands::media::get_thumbnail,

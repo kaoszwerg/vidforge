@@ -110,4 +110,12 @@ export const api = {
   /** A snapshot of every job (queued, running, finished), in enqueue order — the status-bar process
    * list's initial load; live changes stream in afterwards via `job://update` (`useJobs`). */
   listJobs: () => invoke<JobDto[]>("list_jobs"),
+  /**
+   * Download and install a managed ffmpeg suite (ADR-PROJ-001 §2) — the one deliberate network egress,
+   * user-initiated, pinned source, SHA-256 verified. Progress streams via the `install://progress`
+   * event (`useInstallFfmpeg`); the promise resolves with the freshly discovered `FfmpegStatus` on
+   * success, or rejects with a human-readable string on failure (e.g. on macOS, where no managed build
+   * is offered and the message points at `brew install ffmpeg` instead).
+   */
+  installFfmpeg: () => invoke<FfmpegStatus>("install_ffmpeg"),
 };

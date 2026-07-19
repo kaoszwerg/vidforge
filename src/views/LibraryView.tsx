@@ -5,16 +5,37 @@ import { Dropzone } from "../components/ui/Dropzone";
 import { MetaRow } from "../components/ui/MetaRow";
 import { Select } from "../components/ui/Select";
 import { Button } from "../components/ui/Button";
+import { ProgressBar } from "../components/ui/ProgressBar";
 import { VideoCard, type SelectModifiers } from "../components/VideoCard";
 import { DetailView } from "./DetailView";
 import { api } from "../api/commands";
 import { useFfmpegStatus } from "../hooks/useFfmpegStatus";
+import { useInstallFfmpeg } from "../hooks/useInstallFfmpeg";
 import { useScanFolder } from "../hooks/useScanFolder";
 import { useEnqueueJob, usePresets } from "../hooks/useJobs";
 import { useLibraryStore } from "../store/library";
-import { useT } from "../i18n";
+import { useT, type MessageKey } from "../i18n";
 import { errorMessage } from "../lib/errors";
 import { isConvertiblePreset, presetLabelKey } from "../lib/presets";
+
+/** `InstallProgress.phase` (download/verify/extract/install/done) to its label key. `"error"` is
+ * handled separately (the failure message replaces the progress row entirely) — a phase this switch
+ * has never seen (a future backend addition) falls back to the generic "installing" label rather than
+ * rendering nothing. */
+function installPhaseLabelKey(phase: string): MessageKey {
+  switch (phase) {
+    case "download":
+      return "install.phase.download";
+    case "verify":
+      return "install.phase.verify";
+    case "extract":
+      return "install.phase.extract";
+    case "done":
+      return "install.phase.done";
+    default:
+      return "install.phase.install";
+  }
+}
 
 /**
  * Library view (ADR-PROJ-001): pick or drop a folder, scan it, and show one card per video in a
@@ -23,9 +44,9 @@ import { isConvertiblePreset, presetLabelKey } from "../lib/presets";
  *
  * ffmpeg/ffprobe availability gates everything else (ADR-CORE-037: "not found" is a first-class state,
  * never a crash): scanning and probing both shell out to them, so the view checks `useFfmpegStatus`
- * first and shows a HUD notice — with whatever paths *were* resolved — instead of a grid that would
- * only fail once the user tries to use it. The in-app installer button is a later slice (`PLAN.md`
- * Phase 1); this view only surfaces the state.
+ * first and shows a HUD notice — with whatever paths *were* resolved, an in-app installer
+ * (`useInstallFfmpeg`) with live progress, and the failure detail on `phase: "error"` or a rejected
+ * install — instead of a grid that would only fail once the user tries to use it.
  *
  * **Selection model** (standard-OS multiselect, `useLibraryStore`): a **plain click** on a card both
  * narrows the bulk selection to exactly that card AND opens its Detail view — the existing
@@ -49,6 +70,7 @@ export function LibraryView() {
   const clearSelection = useLibraryStore((s) => s.clearSelection);
 
   const ffmpeg = useFfmpegStatus();
+  const installFfmpeg = useInstallFfmpeg();
   const scan = useScanFolder(folder);
 
   const presets = usePresets();
@@ -130,6 +152,21 @@ export function LibraryView() {
   }
 
   if (ffmpeg.data && !ffmpeg.data.ready) {
+    // `phase: "error"` is treated as a failure the moment the event arrives — before the mutation
+    // promise itself has settled — so the progress row swaps to the failure message immediately rather
+    // than sitting on a stale "error" phase label for the remainder of `isInstalling`.
+    const installProgress =
+      installFfmpeg.isInstalling && installFfmpeg.progress?.phase !== "error"
+        ? installFfmpeg.progress
+        : null;
+    const installFailed = installFfmpeg.progress?.phase === "error" || installFfmpeg.error != null;
+    const installFailureDetail =
+      installFfmpeg.progress?.phase === "error" && installFfmpeg.progress.message
+        ? installFfmpeg.progress.message
+        : installFfmpeg.error
+          ? errorMessage(installFfmpeg.error)
+          : null;
+
     return (
       <div className="h-full space-y-4 overflow-auto p-6">
         <HudPanel accent="danger" label={t("library.ffmpegMissing.title")}>
@@ -138,6 +175,37 @@ export function LibraryView() {
             <MetaRow k="ffmpeg" v={ffmpeg.data.ffmpeg?.path ?? "—"} />
             <MetaRow k="ffprobe" v={ffmpeg.data.ffprobe?.path ?? "—"} />
           </dl>
+          <p className="text-dim mt-3 text-xs leading-relaxed">{t("install.explain")}</p>
+          <div className="mt-3 flex flex-col gap-2">
+            <Button
+              accent="cyan"
+              onClick={() => installFfmpeg.install()}
+              disabled={installFfmpeg.isInstalling}
+              className="self-start"
+            >
+              {t("install.button")}
+            </Button>
+            {installProgress ? (
+              <div className="flex flex-col gap-1">
+                <div className="text-dim flex items-center justify-between text-xs">
+                  <span>{t(installPhaseLabelKey(installProgress.phase))}</span>
+                  {installProgress.percent >= 0 ? (
+                    <span>{Math.round(installProgress.percent)}%</span>
+                  ) : null}
+                </div>
+                <ProgressBar
+                  percent={installProgress.percent}
+                  indeterminate={installProgress.percent < 0}
+                />
+              </div>
+            ) : null}
+            {installFailed ? (
+              <p className="text-danger text-xs" role="alert">
+                {t("install.failed")}
+                {installFailureDetail ? ` ${installFailureDetail}` : ""}
+              </p>
+            ) : null}
+          </div>
         </HudPanel>
       </div>
     );

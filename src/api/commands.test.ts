@@ -239,4 +239,15 @@ describe("api", () => {
     await expect(api.listJobs()).resolves.toEqual([]);
     expect(mockInvoke).toHaveBeenCalledWith("list_jobs");
   });
+
+  it("installFfmpeg calls install_ffmpeg with no args", async () => {
+    const status = {
+      ffmpeg: { path: "/opt/vidforge/ffmpeg", version: "6.1.1", source: "managed" },
+      ffprobe: { path: "/opt/vidforge/ffprobe", version: "6.1.1", source: "managed" },
+      ready: true,
+    };
+    mockInvoke.mockResolvedValue(status);
+    await expect(api.installFfmpeg()).resolves.toEqual(status);
+    expect(mockInvoke).toHaveBeenCalledWith("install_ffmpeg");
+  });
 });

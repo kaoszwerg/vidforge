@@ -46,11 +46,23 @@ export const de = {
   "library.scanError.title": "Scan fehlgeschlagen",
   "library.ffmpegMissing.title": "ffmpeg nicht gefunden",
   "library.ffmpegMissing.body":
-    "Vidforge benötigt ffmpeg und ffprobe, um Videos zu scannen und abzuspielen. Installiere beide und starte die App neu, oder hinterlege den Pfad in den Einstellungen. Ein In-App-Installer folgt in einem späteren Schritt.",
+    "Vidforge benötigt ffmpeg und ffprobe, um Videos zu scannen und abzuspielen. Installiere beide und starte die App neu, hinterlege den Pfad in den Einstellungen, oder installiere ffmpeg direkt über die Schaltfläche unten.",
   "library.card.probeError": "Metadaten konnten nicht gelesen werden: {message}",
   "library.selectCount": "{count} ausgewählt",
   "library.selectConvert": "Ausgewählte konvertieren",
   "library.selectClear": "Auswahl aufheben",
+
+  // ffmpeg installer (LibraryView's ffmpeg-missing notice, ADR-PROJ-001 §2 — the one opt-in network
+  // egress; the download source and SHA-256 verification are disclosed here per rule:privacy).
+  "install.button": "ffmpeg installieren",
+  "install.explain":
+    "Lädt eine zu diesem Betriebssystem passende ffmpeg-Version herunter, prüft ihre Integrität per SHA-256 und installiert sie lokal im App-Datenverzeichnis.",
+  "install.phase.download": "Lade herunter…",
+  "install.phase.verify": "Prüfe Integrität…",
+  "install.phase.extract": "Entpacke…",
+  "install.phase.install": "Installiere…",
+  "install.phase.done": "Fertig",
+  "install.failed": "Installation fehlgeschlagen.",
 
   // DetailView.
   "detail.error.title": "Metadaten-Fehler",
@@ -225,11 +237,21 @@ export const en: Record<MessageKey, string> = {
   "library.scanError.title": "Scan failed",
   "library.ffmpegMissing.title": "ffmpeg not found",
   "library.ffmpegMissing.body":
-    "Vidforge needs ffmpeg and ffprobe to scan and play videos. Install both and restart the app, or set the path in Settings. An in-app installer is coming in a later step.",
+    "Vidforge needs ffmpeg and ffprobe to scan and play videos. Install both and restart the app, set the path in Settings, or install ffmpeg directly using the button below.",
   "library.card.probeError": "Could not read metadata: {message}",
   "library.selectCount": "{count} selected",
   "library.selectConvert": "Convert selected",
   "library.selectClear": "Clear selection",
+
+  "install.button": "Install ffmpeg",
+  "install.explain":
+    "Downloads an ffmpeg build matching this operating system, verifies its integrity via SHA-256, and installs it locally in the app data directory.",
+  "install.phase.download": "Downloading…",
+  "install.phase.verify": "Verifying…",
+  "install.phase.extract": "Extracting…",
+  "install.phase.install": "Installing…",
+  "install.phase.done": "Done",
+  "install.failed": "Install failed.",
 
   "detail.error.title": "Metadata error",
   "detail.panel.file": "File",

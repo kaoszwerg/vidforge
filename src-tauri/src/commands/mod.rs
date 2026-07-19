@@ -5,7 +5,7 @@ use crate::dto::{BuildInfo, CrashReport, FfmpegStatus, SettingsDto};
 use crate::error::{AppError, Result};
 use crate::settings::SettingsPatch;
 use crate::state::AppState;
-use tauri::State;
+use tauri::{Manager, State};
 
 pub mod jobs;
 pub mod media;
@@ -174,6 +174,25 @@ pub fn discover_ffmpeg(app: tauri::AppHandle, state: State<'_, AppState>) -> Res
         &bin_dir,
     );
     tracing::info!(ready = status.ready, "discover_ffmpeg done");
+    Ok(status)
+}
+
+/// Download + install the ffmpeg suite into `<app_data>/bin` (ADR-PROJ-001 §2, rule:privacy). The one
+/// deliberate, **user-initiated** network egress. Emits `install://progress`; returns the fresh status.
+#[tauri::command]
+pub async fn install_ffmpeg(app: tauri::AppHandle) -> Result<FfmpegStatus> {
+    tracing::info!("install_ffmpeg (user-initiated)");
+    let bin_dir = crate::ffmpeg::managed_bin_dir(&app)?;
+    crate::ffmpeg::install::run(&app, &bin_dir).await?;
+    let settings = app.state::<AppState>().settings.get();
+    let status = crate::ffmpeg::discover::discover(
+        crate::ffmpeg::discover::Overrides {
+            ffmpeg: settings.ffmpeg_path.as_deref(),
+            ffprobe: settings.ffprobe_path.as_deref(),
+        },
+        &bin_dir,
+    );
+    tracing::info!(ready = status.ready, "install_ffmpeg done");
     Ok(status)
 }
 

@@ -55,8 +55,8 @@ checklist an agent touching the pipeline must honour.
   `<app_data>/bin/` (managed install) → `PATH` → platform locations. When absent, return the typed
   "not found" state and let the UI offer the installer — **never** panic or silently no-op (ADR-CORE-037).
 - **The installer is the only egress, and it is opt-in.** Outbound network access exists **only** in the
-  user-initiated ffmpeg installer, which downloads a **pinned** build (URL + SHA-256 in the embedded
-  manifest), verifies the hash before use, and writes to `<app_data>/bin/`. Any other outbound flow is
+  user-initiated ffmpeg installer, which downloads a build from a **pinned** URL, verifies it against the
+  host's published `checksums.sha256` (fetched at install time), and writes to `<app_data>/bin/`. Any other outbound flow is
   forbidden without its own ADR (rule:privacy). Download via system `curl`, extract via system `tar`,
   verify via the `sha2` crate — do not add a Rust TLS/zip stack (the licence gate rejects it).
 - **Output is strictly non-destructive.** Conversions/repairs write to an output dir; the source file is

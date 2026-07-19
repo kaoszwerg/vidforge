@@ -243,6 +243,19 @@ pub struct JobDto {
     pub error: Option<String>,
 }
 
+/// Progress of the in-app ffmpeg install, emitted as `install://progress` (ADR-PROJ-001 §2). The one
+/// deliberate network egress — user-initiated, pinned source, SHA-256 verified.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct InstallProgress {
+    /// `"download"` | `"verify"` | `"extract"` | `"install"` | `"done"` | `"error"`.
+    pub phase: String,
+    /// 0..100 overall progress; `-1` when the current phase is indeterminate.
+    pub percent: f64,
+    /// A short, localizable-key-free human note (e.g. the failure reason on `"error"`).
+    pub message: Option<String>,
+}
+
 fn default_ui_scale() -> f64 {
     1.0
 }

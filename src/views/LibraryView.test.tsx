@@ -5,6 +5,7 @@ import { LibraryView } from "./LibraryView";
 import type { SelectModifiers } from "../components/VideoCard";
 
 vi.mock("../hooks/useFfmpegStatus", () => ({ useFfmpegStatus: vi.fn() }));
+vi.mock("../hooks/useInstallFfmpeg", () => ({ useInstallFfmpeg: vi.fn() }));
 vi.mock("../hooks/useScanFolder", () => ({ useScanFolder: vi.fn() }));
 vi.mock("../hooks/useJobs", () => ({ usePresets: vi.fn(), useEnqueueJob: vi.fn() }));
 vi.mock("../store/library", () => ({ useLibraryStore: vi.fn() }));
@@ -58,6 +59,7 @@ vi.mock("../components/ui/Dropzone", () => ({
 }));
 
 import { useFfmpegStatus } from "../hooks/useFfmpegStatus";
+import { useInstallFfmpeg } from "../hooks/useInstallFfmpeg";
 import { useScanFolder } from "../hooks/useScanFolder";
 import { usePresets, useEnqueueJob } from "../hooks/useJobs";
 import { useLibraryStore } from "../store/library";
@@ -78,6 +80,17 @@ function mockFfmpeg(overrides: Partial<ReturnType<typeof useFfmpegStatus>> = {})
     error: null,
     ...overrides,
   } as ReturnType<typeof useFfmpegStatus>);
+}
+
+const installMutate = vi.fn();
+function mockInstall(overrides: Partial<ReturnType<typeof useInstallFfmpeg>> = {}) {
+  vi.mocked(useInstallFfmpeg).mockReturnValue({
+    install: installMutate,
+    progress: null,
+    isInstalling: false,
+    error: null,
+    ...overrides,
+  } as ReturnType<typeof useInstallFfmpeg>);
 }
 
 function mockScan(overrides: Partial<ReturnType<typeof useScanFolder>> = {}) {
@@ -156,8 +169,10 @@ describe("LibraryView", () => {
     setSelectedPaths.mockReset();
     clearSelection.mockReset();
     enqueueMutate.mockReset();
+    installMutate.mockReset();
     vi.mocked(api.pickFolder).mockReset();
     mockFfmpeg();
+    mockInstall();
     mockScan();
     mockPresets();
     mockEnqueue();
@@ -188,6 +203,94 @@ describe("LibraryView", () => {
     expect(screen.getByText("ffmpeg nicht gefunden")).toBeInTheDocument();
     expect(screen.getByText("/opt/ffmpeg")).toBeInTheDocument();
     expect(screen.getByText("—")).toBeInTheDocument(); // ffprobe not found
+  });
+
+  describe("ffmpeg installer (missing notice)", () => {
+    const missingStatus = {
+      ffmpeg: { path: "/opt/ffmpeg", version: "6.0", source: "managed" },
+      ffprobe: null,
+      ready: false,
+    };
+
+    it("starts the install when the button is clicked", () => {
+      mockFfmpeg({ data: missingStatus });
+      render(<LibraryView />);
+
+      fireEvent.click(screen.getByRole("button", { name: "ffmpeg installieren" }));
+
+      expect(installMutate).toHaveBeenCalledOnce();
+    });
+
+    it("disables the install button while installing", () => {
+      mockFfmpeg({ data: missingStatus });
+      mockInstall({
+        isInstalling: true,
+        progress: { phase: "download", percent: 30, message: null },
+      });
+      render(<LibraryView />);
+
+      expect(screen.getByRole("button", { name: "ffmpeg installieren" })).toBeDisabled();
+    });
+
+    it("shows the phase label and percent while installing", () => {
+      mockFfmpeg({ data: missingStatus });
+      mockInstall({
+        isInstalling: true,
+        progress: { phase: "download", percent: 30, message: null },
+      });
+      render(<LibraryView />);
+
+      expect(screen.getByText("Lade herunter…")).toBeInTheDocument();
+      expect(screen.getByText("30%")).toBeInTheDocument();
+      expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "30");
+    });
+
+    it("shows an indeterminate progress bar when percent is -1", () => {
+      mockFfmpeg({ data: missingStatus });
+      mockInstall({
+        isInstalling: true,
+        progress: { phase: "extract", percent: -1, message: null },
+      });
+      render(<LibraryView />);
+
+      expect(screen.getByText("Entpacke…")).toBeInTheDocument();
+      expect(screen.getByRole("progressbar")).not.toHaveAttribute("aria-valuenow");
+    });
+
+    it("replaces the progress row with the backend detail on a phase: error event", () => {
+      mockFfmpeg({ data: missingStatus });
+      mockInstall({
+        isInstalling: true,
+        progress: { phase: "error", percent: -1, message: "SHA-256 mismatch" },
+      });
+      render(<LibraryView />);
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Installation fehlgeschlagen. SHA-256 mismatch",
+      );
+      expect(screen.queryByRole("progressbar")).toBeNull();
+    });
+
+    it("shows a rejected install's error message", () => {
+      mockFfmpeg({ data: missingStatus });
+      mockInstall({
+        isInstalling: false,
+        error: "install ffmpeg manually (e.g. `brew install ffmpeg`)",
+      });
+      render(<LibraryView />);
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Installation fehlgeschlagen. install ffmpeg manually (e.g. `brew install ffmpeg`)",
+      );
+    });
+
+    it("shows no progress row or failure message while idle", () => {
+      mockFfmpeg({ data: missingStatus });
+      render(<LibraryView />);
+
+      expect(screen.queryByRole("progressbar")).toBeNull();
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
   });
 
   it("shows the Dropzone with the placeholder label when no folder is chosen", () => {

@@ -5,6 +5,7 @@
 //! (the one deliberate, opt-in network egress).
 
 pub mod discover;
+pub mod install;
 
 use crate::error::{AppError, Result};
 use std::path::{Path, PathBuf};

@@ -97,7 +97,8 @@ Repair (remux `-c copy` + genpts/index rebuild) · Custom (container, codec, CRF
       variants + bindings + contract tests.
 - [x] `src/i18n/` (de/en, `useT()`, language from settings, German default) + `Select` HUD primitive.
 - [x] ffmpeg/ffprobe discovery (override → managed → PATH → platform) + version probe + `discover_ffmpeg`.
-- [ ] In-app ffmpeg installer (pinned URL, sha2 verify, tar extract) + command + UI.
+- [x] In-app ffmpeg installer (pinned BtbN URL, `checksums.sha256` verify via `sha2`, system curl/tar) +
+      `install_ffmpeg` command + install button/progress; macOS → manual-install message (follow-up).
 
 ### Phase 2 — Scan, metadata, quality, thumbnails, Library + Detail (done)
 - [x] `scan_folder`/`probe_media`/`get_thumbnail` + quality tier + DTOs + tests (probe-JSON fixtures +

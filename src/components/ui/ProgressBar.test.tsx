@@ -53,4 +53,21 @@ describe("ProgressBar", () => {
     render(<ProgressBar percent={50} className="mt-2" />);
     expect(screen.getByRole("progressbar").className).toContain("mt-2");
   });
+
+  it("omits aria-valuenow and renders a full-width pulsing fill when indeterminate", () => {
+    render(<ProgressBar percent={-1} indeterminate />);
+    const bar = screen.getByRole("progressbar");
+    expect(bar).not.toHaveAttribute("aria-valuenow");
+    expect(bar).toHaveAttribute("aria-valuemin", "0");
+    expect(bar).toHaveAttribute("aria-valuemax", "100");
+    const fill = bar.firstElementChild as HTMLElement;
+    expect(fill.className).toContain("animate-pulse");
+    expect(fill.className).toContain("w-full");
+    expect(fill.style.width).toBe("");
+  });
+
+  it("ignores percent while indeterminate", () => {
+    render(<ProgressBar percent={999} indeterminate />);
+    expect(screen.getByRole("progressbar")).not.toHaveAttribute("aria-valuenow");
+  });
 });

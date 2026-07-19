@@ -34,6 +34,11 @@ All notable changes to this project are documented here. The format follows
   (click / Ctrl-Cmd-click / Shift-range / Ctrl+A / Escape) with a "Convert selected" action.
 - The animated window border energizes while jobs run and settles when the queue drains. New HUD
   `ProgressBar` primitive.
+- **In-app ffmpeg installer** — the one deliberate, user-initiated network egress: downloads a pinned
+  BtbN build over HTTPS (Windows/Linux) via system `curl`, verifies it against the host's published
+  `checksums.sha256`, extracts it via system `tar` and installs `ffmpeg`+`ffprobe` into `<app_data>/bin`,
+  with live progress. macOS shows a manual-install (Homebrew) message. Exposed as `install_ffmpeg` and an
+  "Install ffmpeg" button in the ffmpeg-missing notice. Verification via the `sha2` crate.
 
 ### Fixed
 

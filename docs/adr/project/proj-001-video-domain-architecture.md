@@ -78,9 +78,12 @@ any sibling tool a feature needs) when the system has none:
 
 - **User-initiated only.** Triggered by a button in the "ffmpeg not found" UI — never automatic, never
   silent, never on launch.
-- **Pinned + verified.** An embedded manifest pins, per OS/arch, the exact download URL, the archive type,
-  the **SHA-256** and the in-archive paths of the binaries. The download is verified against the pinned
-  hash before use; a mismatch aborts and is surfaced. This is a reproducible, auditable fetch, not "latest".
+- **Pinned + verified.** The download URL is pinned per OS/arch; the archive is verified against the build
+  host's own `checksums.sha256`, fetched over HTTPS at install time — a rolling "latest" build cannot carry
+  a hash pinned in the binary, so the trust anchor is the host's published checksum over TLS. A SHA-256
+  mismatch aborts, discards the file, and is surfaced. Windows and Linux use BtbN's static GPL builds;
+  macOS has no such build, so it degrades to a clear "install manually" message (Homebrew) — a first-class
+  state (ADR-CORE-037), tracked as a follow-up.
 - **Mechanism, dependency-light.** Download via the system `curl` (TLS via the OS), extract via the system
   `tar` (bsdtar handles `.zip` on Windows/macOS; GNU `tar` handles `.tar.xz` on Linux), verify with the
   pure-Rust `sha2` crate. No Rust TLS/zip stack is added (a Rust TLS client would pull an OpenSSL-licensed
