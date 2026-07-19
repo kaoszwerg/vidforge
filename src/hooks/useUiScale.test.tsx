@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactNode } from "react";
 import { useApplyUiScale } from "./useUiScale";
 import type { SettingsDto } from "../bindings/SettingsDto";
+import { settingsDto } from "../test/settings";
 
 const { getCurrentWebviewMock } = vi.hoisted(() => ({ getCurrentWebviewMock: vi.fn() }));
 
@@ -20,7 +21,7 @@ vi.mock("../api/commands", () => ({
 import { api } from "../api/commands";
 
 function settings(ui_scale: number): SettingsDto {
-  return { ui_scale, minimize_to_tray: false };
+  return settingsDto({ ui_scale });
 }
 
 function makeWrapper(qc: QueryClient) {

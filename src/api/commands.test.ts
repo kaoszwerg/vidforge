@@ -89,4 +89,11 @@ describe("api", () => {
     await api.openExternal("https://example.com");
     expect(mockInvoke).toHaveBeenCalledWith("open_external", { url: "https://example.com" });
   });
+
+  it("discoverFfmpeg calls discover_ffmpeg with no args", async () => {
+    const status = { ffmpeg: null, ffprobe: null, ready: false };
+    mockInvoke.mockResolvedValue(status);
+    await expect(api.discoverFfmpeg()).resolves.toEqual(status);
+    expect(mockInvoke).toHaveBeenCalledWith("discover_ffmpeg");
+  });
 });

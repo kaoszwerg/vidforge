@@ -3,6 +3,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { BuildInfo } from "../bindings/BuildInfo";
 import type { CrashReport } from "../bindings/CrashReport";
+import type { FfmpegStatus } from "../bindings/FfmpegStatus";
 import type { LogRecord } from "../bindings/LogRecord";
 import type { SettingsDto } from "../bindings/SettingsDto";
 
@@ -29,6 +30,11 @@ export const api = {
       uiScale: opts.uiScale ?? null,
       minimizeToTray: opts.minimizeToTray ?? null,
     }),
+  /**
+   * Resolve the ffmpeg suite (ffmpeg + ffprobe): settings override → managed install → PATH → platform
+   * locations (ADR-PROJ-001). `ready` is false when either is missing, so the UI can offer the installer.
+   */
+  discoverFfmpeg: () => invoke<FfmpegStatus>("discover_ffmpeg"),
   /** Open an http(s) URL in the default browser (routed through the backend so it is logged). */
   openExternal: (url: string) => invoke<void>("open_external", { url }),
   /**

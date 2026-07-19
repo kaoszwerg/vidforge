@@ -16,4 +16,29 @@ ui_scale: number,
  * When true, closing the window hides the app to a system-tray icon instead of quitting, so it
  * keeps running in the background (ADR-APP-021). Default `false` — a fresh app is a normal window.
  */
-minimize_to_tray: boolean, };
+minimize_to_tray: boolean, 
+/**
+ * UI language: `"de"` or `"en"` (ADR-PROJ-001). Default `"de"`. Any other value sanitises to `"de"`.
+ */
+language: string, 
+/**
+ * Explicit path to the `ffmpeg` binary, overriding discovery. `None` = auto-discover.
+ */
+ffmpeg_path: string | null, 
+/**
+ * Explicit path to the `ffprobe` binary, overriding discovery. `None` = auto-discover.
+ */
+ffprobe_path: string | null, 
+/**
+ * Default directory conversions/repairs are written to. `None` = a `vidforge-out` folder beside
+ * each source. Output is always non-destructive — the source is never overwritten (ADR-PROJ-001).
+ */
+output_dir: string | null, 
+/**
+ * How many conversion jobs run at once. Clamped to [1, 8]. Default 2.
+ */
+job_concurrency: number, 
+/**
+ * Whether a folder scan descends into subfolders. Default `true`.
+ */
+recursive_scan: boolean, };

@@ -8,6 +8,7 @@ pub mod commands;
 pub mod crash;
 pub mod dto;
 pub mod error;
+pub mod ffmpeg;
 pub mod logging;
 pub mod settings;
 pub mod state;
@@ -52,6 +53,7 @@ pub fn run() {
             commands::get_recent_logs,
             commands::get_settings,
             commands::update_settings,
+            commands::discover_ffmpeg,
             commands::open_external,
             commands::report_crash,
             commands::pending_crash,

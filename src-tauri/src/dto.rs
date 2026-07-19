@@ -38,6 +38,25 @@ pub struct SettingsDto {
     /// keeps running in the background (ADR-APP-021). Default `false` — a fresh app is a normal window.
     #[serde(default)]
     pub minimize_to_tray: bool,
+    /// UI language: `"de"` or `"en"` (ADR-PROJ-001). Default `"de"`. Any other value sanitises to `"de"`.
+    #[serde(default = "default_language")]
+    pub language: String,
+    /// Explicit path to the `ffmpeg` binary, overriding discovery. `None` = auto-discover.
+    #[serde(default)]
+    pub ffmpeg_path: Option<String>,
+    /// Explicit path to the `ffprobe` binary, overriding discovery. `None` = auto-discover.
+    #[serde(default)]
+    pub ffprobe_path: Option<String>,
+    /// Default directory conversions/repairs are written to. `None` = a `vidforge-out` folder beside
+    /// each source. Output is always non-destructive — the source is never overwritten (ADR-PROJ-001).
+    #[serde(default)]
+    pub output_dir: Option<String>,
+    /// How many conversion jobs run at once. Clamped to [1, 8]. Default 2.
+    #[serde(default = "default_job_concurrency")]
+    pub job_concurrency: u32,
+    /// Whether a folder scan descends into subfolders. Default `true`.
+    #[serde(default = "default_true")]
+    pub recursive_scan: bool,
 }
 
 /// A fatal error from the **UI runtime**, on its way into the durable on-device crash record
@@ -57,8 +76,46 @@ pub struct CrashReport {
     pub stack: Option<String>,
 }
 
+/// One resolved ffmpeg-suite tool (`ffmpeg` or `ffprobe`) — where it was found and its version.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct FfmpegTool {
+    /// Absolute path to the resolved binary.
+    pub path: String,
+    /// Version line reported by the tool (e.g. `"ffmpeg version 6.1.1"`), or `"unknown"`.
+    pub version: String,
+    /// How it was resolved: `"override"`, `"managed"`, `"path"` or `"system"`.
+    pub source: String,
+}
+
+/// Availability of the ffmpeg suite. `ready` is true only when **both** `ffmpeg` and `ffprobe` are
+/// present — every media feature checks this first and offers the installer when it is false
+/// (ADR-PROJ-001, ADR-CORE-037).
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct FfmpegStatus {
+    /// The resolved `ffmpeg` binary, or `None` if it could not be found.
+    pub ffmpeg: Option<FfmpegTool>,
+    /// The resolved `ffprobe` binary, or `None` if it could not be found.
+    pub ffprobe: Option<FfmpegTool>,
+    /// True when both tools are present and usable.
+    pub ready: bool,
+}
+
 fn default_ui_scale() -> f64 {
     1.0
+}
+
+fn default_language() -> String {
+    "de".to_string()
+}
+
+fn default_job_concurrency() -> u32 {
+    2
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl Default for SettingsDto {
@@ -66,6 +123,12 @@ impl Default for SettingsDto {
         Self {
             ui_scale: default_ui_scale(),
             minimize_to_tray: false,
+            language: default_language(),
+            ffmpeg_path: None,
+            ffprobe_path: None,
+            output_dir: None,
+            job_concurrency: default_job_concurrency(),
+            recursive_scan: true,
         }
     }
 }
@@ -82,33 +145,94 @@ mod tests {
     }
 
     #[test]
+    fn settings_default_language_is_german() {
+        assert_eq!(SettingsDto::default().language, "de");
+    }
+
+    #[test]
+    fn settings_default_job_and_scan() {
+        let d = SettingsDto::default();
+        assert_eq!(d.job_concurrency, 2);
+        assert!(d.recursive_scan);
+        assert!(d.ffmpeg_path.is_none());
+        assert!(d.output_dir.is_none());
+    }
+
+    #[test]
     fn settings_roundtrip_through_json() {
         let s = SettingsDto {
             ui_scale: 1.25,
             minimize_to_tray: true,
+            language: "en".to_string(),
+            ffmpeg_path: Some("C:/ffmpeg/bin/ffmpeg.exe".to_string()),
+            ffprobe_path: None,
+            output_dir: Some("D:/out".to_string()),
+            job_concurrency: 4,
+            recursive_scan: false,
         };
         let json = serde_json::to_string(&s).expect("serialize");
         let back: SettingsDto = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(back.ui_scale, 1.25);
         assert!(back.minimize_to_tray);
+        assert_eq!(back.language, "en");
+        assert_eq!(
+            back.ffmpeg_path.as_deref(),
+            Some("C:/ffmpeg/bin/ffmpeg.exe")
+        );
+        assert_eq!(back.job_concurrency, 4);
+        assert!(!back.recursive_scan);
     }
 
     #[test]
     fn settings_from_older_file_defaults_missing_fields() {
-        // A file written before `minimize_to_tray` existed must still load without data loss.
+        // A file written before these fields existed must still load without data loss.
         let s: SettingsDto = serde_json::from_str(r#"{"ui_scale":1.25}"#).expect("deserialize");
         assert_eq!(s.ui_scale, 1.25);
         assert!(!s.minimize_to_tray);
+        assert_eq!(s.language, "de");
+        assert_eq!(s.job_concurrency, 2);
+        assert!(s.recursive_scan);
     }
 
     #[test]
     fn settings_contract_field_names_are_stable() {
         // Pin the JSON keys the generated frontend binding depends on (rule:testing contract).
         let json = serde_json::to_value(SettingsDto::default()).expect("to_value");
-        assert!(json.get("ui_scale").is_some(), "ui_scale key missing");
-        assert!(
-            json.get("minimize_to_tray").is_some(),
-            "minimize_to_tray key missing"
-        );
+        for key in [
+            "ui_scale",
+            "minimize_to_tray",
+            "language",
+            "ffmpeg_path",
+            "ffprobe_path",
+            "output_dir",
+            "job_concurrency",
+            "recursive_scan",
+        ] {
+            assert!(
+                json.get(key).is_some(),
+                "{key} key missing from SettingsDto"
+            );
+        }
+    }
+
+    #[test]
+    fn ffmpeg_status_contract_field_names_are_stable() {
+        let status = FfmpegStatus {
+            ffmpeg: Some(FfmpegTool {
+                path: "/usr/bin/ffmpeg".into(),
+                version: "ffmpeg version 6.1.1".into(),
+                source: "path".into(),
+            }),
+            ffprobe: None,
+            ready: false,
+        };
+        let json = serde_json::to_value(&status).expect("to_value");
+        assert!(json.get("ffmpeg").is_some());
+        assert!(json.get("ffprobe").is_some());
+        assert!(json.get("ready").is_some());
+        let tool = &json["ffmpeg"];
+        assert!(tool.get("path").is_some());
+        assert!(tool.get("version").is_some());
+        assert!(tool.get("source").is_some());
     }
 }

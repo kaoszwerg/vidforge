@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactNode } from "react";
 import { useSettings, useUpdateSettings } from "./useSettings";
-import type { SettingsDto } from "../bindings/SettingsDto";
+import { settingsDto } from "../test/settings";
 
 vi.mock("../api/commands", () => ({
   api: {
@@ -27,7 +27,7 @@ describe("useSettings", () => {
   });
 
   it("loads the persisted settings via the settings query", async () => {
-    const settings: SettingsDto = { ui_scale: 1.1, minimize_to_tray: false };
+    const settings = settingsDto({ ui_scale: 1.1 });
     vi.mocked(api.getSettings).mockResolvedValue(settings);
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
@@ -57,7 +57,7 @@ describe("useUpdateSettings", () => {
   });
 
   it("calls api.updateSettings with the given options and writes the result into the settings cache", async () => {
-    const updated: SettingsDto = { ui_scale: 1.25, minimize_to_tray: false };
+    const updated = settingsDto({ ui_scale: 1.25 });
     vi.mocked(api.updateSettings).mockResolvedValue(updated);
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 

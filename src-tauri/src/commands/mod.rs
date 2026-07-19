@@ -1,8 +1,9 @@
 //! Tauri command surface (typed via ts-rs DTOs). Thin layer: validate, do the work, map errors
 //! (ADR-APP-001, rule:rust-conventions). Every command logs its action and its result (rule:logging).
 
-use crate::dto::{BuildInfo, CrashReport, SettingsDto};
+use crate::dto::{BuildInfo, CrashReport, FfmpegStatus, SettingsDto};
 use crate::error::{AppError, Result};
+use crate::settings::SettingsPatch;
 use crate::state::AppState;
 use tauri::State;
 
@@ -107,26 +108,70 @@ pub fn get_settings(state: State<'_, AppState>) -> SettingsDto {
 }
 
 /// Update the persisted user settings. Omitted fields keep their current value. Toggling
-/// `minimize_to_tray` installs/removes the tray icon immediately (no restart).
+/// `minimize_to_tray` installs/removes the tray icon immediately (no restart). A blank path override
+/// (`ffmpeg_path`/`ffprobe_path`/`output_dir`) clears it back to auto-discovery.
 #[tauri::command]
+#[allow(clippy::too_many_arguments)] // The IPC surface mirrors the settings fields 1:1 (Tauri named args).
 pub fn update_settings(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     ui_scale: Option<f64>,
     minimize_to_tray: Option<bool>,
+    language: Option<String>,
+    ffmpeg_path: Option<String>,
+    ffprobe_path: Option<String>,
+    output_dir: Option<String>,
+    job_concurrency: Option<u32>,
+    recursive_scan: Option<bool>,
 ) -> Result<SettingsDto> {
-    tracing::info!(?ui_scale, ?minimize_to_tray, "update_settings");
+    tracing::info!(
+        ?ui_scale,
+        ?minimize_to_tray,
+        ?language,
+        ?job_concurrency,
+        ?recursive_scan,
+        "update_settings"
+    );
     let was_tray = state.settings.get().minimize_to_tray;
-    let next = state.settings.update(ui_scale, minimize_to_tray)?;
+    let next = state.settings.update(SettingsPatch {
+        ui_scale,
+        minimize_to_tray,
+        language,
+        ffmpeg_path,
+        ffprobe_path,
+        output_dir,
+        job_concurrency,
+        recursive_scan,
+    })?;
     if next.minimize_to_tray != was_tray {
         crate::tray::set_enabled(&app, next.minimize_to_tray);
     }
     tracing::debug!(
         ui_scale = next.ui_scale,
         minimize_to_tray = next.minimize_to_tray,
+        language = %next.language,
         "update_settings ok"
     );
     Ok(next)
+}
+
+/// Resolve the ffmpeg suite (ffmpeg + ffprobe): settings override → managed install → PATH → platform
+/// locations (ADR-PROJ-001 §1). `ready` is false when either is missing, so the UI can offer the
+/// installer. Never fails on a missing tool — absence is a state, not an error (ADR-CORE-037).
+#[tauri::command]
+pub fn discover_ffmpeg(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<FfmpegStatus> {
+    tracing::info!("discover_ffmpeg");
+    let settings = state.settings.get();
+    let bin_dir = crate::ffmpeg::managed_bin_dir(&app)?;
+    let status = crate::ffmpeg::discover::discover(
+        crate::ffmpeg::discover::Overrides {
+            ffmpeg: settings.ffmpeg_path.as_deref(),
+            ffprobe: settings.ffprobe_path.as_deref(),
+        },
+        &bin_dir,
+    );
+    tracing::info!(ready = status.ready, "discover_ffmpeg done");
+    Ok(status)
 }
 
 /// Open an external URL in the user's default browser. Routed through the backend so any failure

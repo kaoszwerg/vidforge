@@ -12,6 +12,24 @@ use std::sync::RwLock;
 
 pub const MIN_UI_SCALE: f64 = 0.7;
 pub const MAX_UI_SCALE: f64 = 1.6;
+pub const MIN_JOB_CONCURRENCY: u32 = 1;
+pub const MAX_JOB_CONCURRENCY: u32 = 8;
+
+/// A partial update to the settings — every field optional, an omitted field keeps its current value.
+/// Kept as a struct (rather than a long positional argument list) so a new setting is one field, not a
+/// new parameter threaded through every call site.
+#[derive(Debug, Default, Clone)]
+pub struct SettingsPatch {
+    pub ui_scale: Option<f64>,
+    pub minimize_to_tray: Option<bool>,
+    pub language: Option<String>,
+    /// A path override; an empty/whitespace string clears the override back to auto-discovery.
+    pub ffmpeg_path: Option<String>,
+    pub ffprobe_path: Option<String>,
+    pub output_dir: Option<String>,
+    pub job_concurrency: Option<u32>,
+    pub recursive_scan: Option<bool>,
+}
 
 /// Thread-safe settings store: in-memory state + the JSON file it is persisted to.
 pub struct SettingsStore {
@@ -32,6 +50,7 @@ impl SettingsStore {
                         path = %path.display(),
                         ui_scale = s.ui_scale,
                         minimize_to_tray = s.minimize_to_tray,
+                        language = %s.language,
                         "settings loaded"
                     );
                     sanitize(s)
@@ -60,22 +79,36 @@ impl SettingsStore {
         }
     }
 
-    /// Apply a partial update (every field optional), persist it, and return the new state.
-    pub fn update(
-        &self,
-        ui_scale: Option<f64>,
-        minimize_to_tray: Option<bool>,
-    ) -> Result<SettingsDto> {
+    /// Apply a partial update, persist it, and return the new state.
+    pub fn update(&self, patch: SettingsPatch) -> Result<SettingsDto> {
         let next = {
             let mut guard = self
                 .current
                 .write()
                 .map_err(|_| AppError::Other("settings lock poisoned".into()))?;
-            if let Some(scale) = ui_scale {
+            if let Some(scale) = patch.ui_scale {
                 guard.ui_scale = scale.clamp(MIN_UI_SCALE, MAX_UI_SCALE);
             }
-            if let Some(tray) = minimize_to_tray {
+            if let Some(tray) = patch.minimize_to_tray {
                 guard.minimize_to_tray = tray;
+            }
+            if let Some(lang) = patch.language {
+                guard.language = normalize_language(&lang);
+            }
+            if let Some(p) = patch.ffmpeg_path {
+                guard.ffmpeg_path = normalize_optional_path(&p);
+            }
+            if let Some(p) = patch.ffprobe_path {
+                guard.ffprobe_path = normalize_optional_path(&p);
+            }
+            if let Some(d) = patch.output_dir {
+                guard.output_dir = normalize_optional_path(&d);
+            }
+            if let Some(c) = patch.job_concurrency {
+                guard.job_concurrency = c.clamp(MIN_JOB_CONCURRENCY, MAX_JOB_CONCURRENCY);
+            }
+            if let Some(r) = patch.recursive_scan {
+                guard.recursive_scan = r;
             }
             guard.clone()
         };
@@ -83,6 +116,9 @@ impl SettingsStore {
         tracing::info!(
             ui_scale = next.ui_scale,
             minimize_to_tray = next.minimize_to_tray,
+            language = %next.language,
+            job_concurrency = next.job_concurrency,
+            recursive_scan = next.recursive_scan,
             "settings updated"
         );
         Ok(next)
@@ -104,13 +140,36 @@ impl SettingsStore {
     }
 }
 
-/// Clamp values coming from disk — a hand-edited file must not be able to push the UI to an
-/// unusable zoom level.
+/// Normalise a language code to one we actually ship. Anything unrecognised becomes the default `"de"`,
+/// so a hand-edited or older file can never leave the UI without a message table (ADR-PROJ-001).
+fn normalize_language(lang: &str) -> String {
+    match lang.trim().to_ascii_lowercase().as_str() {
+        "en" => "en".to_string(),
+        _ => "de".to_string(),
+    }
+}
+
+/// A blank path override means "clear it, go back to auto-discovery" rather than "a file named ''".
+fn normalize_optional_path(p: &str) -> Option<String> {
+    let t = p.trim();
+    if t.is_empty() {
+        None
+    } else {
+        Some(t.to_string())
+    }
+}
+
+/// Clamp values coming from disk — a hand-edited file must not be able to push the UI to an unusable
+/// zoom level, run 999 concurrent ffmpegs, or select a language with no message table.
 fn sanitize(mut s: SettingsDto) -> SettingsDto {
     if !s.ui_scale.is_finite() {
         s.ui_scale = 1.0;
     }
     s.ui_scale = s.ui_scale.clamp(MIN_UI_SCALE, MAX_UI_SCALE);
+    s.language = normalize_language(&s.language);
+    s.job_concurrency = s
+        .job_concurrency
+        .clamp(MIN_JOB_CONCURRENCY, MAX_JOB_CONCURRENCY);
     s
 }
 
@@ -118,19 +177,28 @@ fn sanitize(mut s: SettingsDto) -> SettingsDto {
 mod tests {
     use super::*;
 
+    /// A patch that sets only `ui_scale` — the common shape in these tests.
+    fn scale(v: f64) -> SettingsPatch {
+        SettingsPatch {
+            ui_scale: Some(v),
+            ..Default::default()
+        }
+    }
+
     #[test]
     fn defaults_when_no_file_exists() {
         let dir = tempfile::tempdir().expect("tempdir");
         let store = SettingsStore::load(dir.path());
         assert_eq!(store.get().ui_scale, 1.0);
         assert!(!store.get().minimize_to_tray);
+        assert_eq!(store.get().language, "de");
     }
 
     #[test]
     fn update_persists_and_reloads() {
         let dir = tempfile::tempdir().expect("tempdir");
         let store = SettingsStore::load(dir.path());
-        let next = store.update(Some(1.25), None).expect("update");
+        let next = store.update(scale(1.25)).expect("update");
         assert_eq!(next.ui_scale, 1.25);
 
         let reloaded = SettingsStore::load(dir.path());
@@ -142,9 +210,9 @@ mod tests {
     fn ui_scale_is_clamped_on_write_and_read() {
         let dir = tempfile::tempdir().expect("tempdir");
         let store = SettingsStore::load(dir.path());
-        let high = store.update(Some(9.0), None).expect("update");
+        let high = store.update(scale(9.0)).expect("update");
         assert_eq!(high.ui_scale, MAX_UI_SCALE);
-        let low = store.update(Some(0.1), None).expect("update");
+        let low = store.update(scale(0.1)).expect("update");
         assert_eq!(low.ui_scale, MIN_UI_SCALE);
 
         std::fs::write(dir.path().join("settings.json"), r#"{"ui_scale":42.0}"#).expect("write");
@@ -163,17 +231,104 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let store = SettingsStore::load(dir.path());
         assert!(!store.get().minimize_to_tray);
-        let next = store.update(None, Some(true)).expect("update");
+        let next = store
+            .update(SettingsPatch {
+                minimize_to_tray: Some(true),
+                ..Default::default()
+            })
+            .expect("update");
         assert!(next.minimize_to_tray);
         assert!(SettingsStore::load(dir.path()).get().minimize_to_tray);
     }
 
     #[test]
-    fn older_file_without_tray_field_loads_with_default() {
+    fn older_file_without_new_fields_loads_with_defaults() {
         let dir = tempfile::tempdir().expect("tempdir");
         std::fs::write(dir.path().join("settings.json"), r#"{"ui_scale":1.25}"#).expect("write");
         let s = SettingsStore::load(dir.path()).get();
         assert_eq!(s.ui_scale, 1.25);
         assert!(!s.minimize_to_tray);
+        assert_eq!(s.language, "de");
+        assert_eq!(s.job_concurrency, 2);
+        assert!(s.recursive_scan);
+    }
+
+    #[test]
+    fn language_is_normalised_on_update_and_load() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let store = SettingsStore::load(dir.path());
+        assert_eq!(
+            store
+                .update(SettingsPatch {
+                    language: Some("EN".into()),
+                    ..Default::default()
+                })
+                .expect("update")
+                .language,
+            "en"
+        );
+        // An unknown language falls back to the default rather than leaving the UI without strings.
+        assert_eq!(
+            store
+                .update(SettingsPatch {
+                    language: Some("fr".into()),
+                    ..Default::default()
+                })
+                .expect("update")
+                .language,
+            "de"
+        );
+        std::fs::write(
+            dir.path().join("settings.json"),
+            r#"{"ui_scale":1.0,"language":"zz"}"#,
+        )
+        .expect("write");
+        assert_eq!(SettingsStore::load(dir.path()).get().language, "de");
+    }
+
+    #[test]
+    fn job_concurrency_is_clamped() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let store = SettingsStore::load(dir.path());
+        assert_eq!(
+            store
+                .update(SettingsPatch {
+                    job_concurrency: Some(99),
+                    ..Default::default()
+                })
+                .expect("update")
+                .job_concurrency,
+            MAX_JOB_CONCURRENCY
+        );
+        assert_eq!(
+            store
+                .update(SettingsPatch {
+                    job_concurrency: Some(0),
+                    ..Default::default()
+                })
+                .expect("update")
+                .job_concurrency,
+            MIN_JOB_CONCURRENCY
+        );
+    }
+
+    #[test]
+    fn blank_path_override_clears_it() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let store = SettingsStore::load(dir.path());
+        let set = store
+            .update(SettingsPatch {
+                ffmpeg_path: Some("  C:/ffmpeg/bin/ffmpeg.exe  ".into()),
+                ..Default::default()
+            })
+            .expect("update");
+        assert_eq!(set.ffmpeg_path.as_deref(), Some("C:/ffmpeg/bin/ffmpeg.exe"));
+        let cleared = store
+            .update(SettingsPatch {
+                ffmpeg_path: Some("   ".into()),
+                ..Default::default()
+            })
+            .expect("update");
+        assert!(cleared.ffmpeg_path.is_none());
     }
 }
