@@ -2,9 +2,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactNode } from "react";
 import { LibraryView } from "./LibraryView";
+import type { SelectModifiers } from "../components/VideoCard";
 
 vi.mock("../hooks/useFfmpegStatus", () => ({ useFfmpegStatus: vi.fn() }));
 vi.mock("../hooks/useScanFolder", () => ({ useScanFolder: vi.fn() }));
+vi.mock("../hooks/useJobs", () => ({ usePresets: vi.fn(), useEnqueueJob: vi.fn() }));
 vi.mock("../store/library", () => ({ useLibraryStore: vi.fn() }));
 vi.mock("../api/commands", () => ({ api: { pickFolder: vi.fn() } }));
 vi.mock("../hooks/useSettings", () => ({ useSettings: vi.fn(), useUpdateSettings: vi.fn() }));
@@ -13,10 +15,19 @@ vi.mock("../components/VideoCard", () => ({
   VideoCard: ({
     file,
     onSelect,
+    selected,
   }: {
     file: { path: string; name: string };
-    onSelect: (p: string) => void;
-  }) => <button onClick={() => onSelect(file.path)}>{`card:${file.name}`}</button>,
+    onSelect: (p: string, mods: SelectModifiers) => void;
+    selected?: boolean;
+  }) => (
+    <button
+      aria-pressed={selected ?? false}
+      onClick={(e) => onSelect(file.path, { ctrl: e.ctrlKey, meta: e.metaKey, shift: e.shiftKey })}
+    >
+      {`card:${file.name}`}
+    </button>
+  ),
 }));
 
 vi.mock("./DetailView", () => ({
@@ -48,6 +59,7 @@ vi.mock("../components/ui/Dropzone", () => ({
 
 import { useFfmpegStatus } from "../hooks/useFfmpegStatus";
 import { useScanFolder } from "../hooks/useScanFolder";
+import { usePresets, useEnqueueJob } from "../hooks/useJobs";
 import { useLibraryStore } from "../store/library";
 import { api } from "../api/commands";
 import { useSettings } from "../hooks/useSettings";
@@ -78,12 +90,58 @@ function mockScan(overrides: Partial<ReturnType<typeof useScanFolder>> = {}) {
   } as ReturnType<typeof useScanFolder>);
 }
 
+const PRESETS = [
+  { id: "universal", container: "mp4", reencodes: true },
+  { id: "efficient", container: "mp4", reencodes: true },
+];
+
+function mockPresets(overrides: Partial<ReturnType<typeof usePresets>> = {}) {
+  vi.mocked(usePresets).mockReturnValue({
+    data: PRESETS,
+    isPending: false,
+    isError: false,
+    error: null,
+    ...overrides,
+  } as ReturnType<typeof usePresets>);
+}
+
+const enqueueMutate = vi.fn();
+function mockEnqueue(overrides: Partial<ReturnType<typeof useEnqueueJob>> = {}) {
+  vi.mocked(useEnqueueJob).mockReturnValue({
+    mutate: enqueueMutate,
+    isPending: false,
+    isError: false,
+    error: null,
+    ...overrides,
+  } as ReturnType<typeof useEnqueueJob>);
+}
+
 const setFolder = vi.fn();
 const selectVideo = vi.fn();
+const selectOnly = vi.fn();
+const toggleSelected = vi.fn();
+const setSelectedPaths = vi.fn();
+const clearSelection = vi.fn();
 
-function mockStore(state: { folder: string | null; selectedPath: string | null }) {
+function mockStore(state: {
+  folder: string | null;
+  selectedPath: string | null;
+  selected?: Set<string>;
+  lastClickedPath?: string | null;
+}) {
   vi.mocked(useLibraryStore).mockImplementation(((selector: (s: unknown) => unknown) =>
-    selector({ ...state, setFolder, selectVideo })) as typeof useLibraryStore);
+    selector({
+      folder: state.folder,
+      selectedPath: state.selectedPath,
+      selected: state.selected ?? new Set(),
+      lastClickedPath: state.lastClickedPath ?? null,
+      setFolder,
+      selectVideo,
+      selectOnly,
+      toggleSelected,
+      setSelectedPaths,
+      clearSelection,
+    })) as typeof useLibraryStore);
 }
 
 describe("LibraryView", () => {
@@ -93,9 +151,16 @@ describe("LibraryView", () => {
     >);
     setFolder.mockReset();
     selectVideo.mockReset();
+    selectOnly.mockReset();
+    toggleSelected.mockReset();
+    setSelectedPaths.mockReset();
+    clearSelection.mockReset();
+    enqueueMutate.mockReset();
     vi.mocked(api.pickFolder).mockReset();
     mockFfmpeg();
     mockScan();
+    mockPresets();
+    mockEnqueue();
     mockStore({ folder: null, selectedPath: null });
   });
 
@@ -197,14 +262,145 @@ describe("LibraryView", () => {
     expect(screen.getByRole("button", { name: "card:b.mkv" })).toBeInTheDocument();
   });
 
-  it("selects a video when its card is clicked", () => {
+  it("a plain click narrows the selection to that card and opens the Detail view", () => {
     mockStore({ folder: "/videos", selectedPath: null });
     mockScan({ data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }] });
     render(<LibraryView />);
 
     fireEvent.click(screen.getByRole("button", { name: "card:a.mp4" }));
 
+    expect(selectOnly).toHaveBeenCalledWith("/videos/a.mp4");
     expect(selectVideo).toHaveBeenCalledWith("/videos/a.mp4");
+  });
+
+  it("a Ctrl-click toggles the card without opening the Detail view", () => {
+    mockStore({ folder: "/videos", selectedPath: null });
+    mockScan({ data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }] });
+    render(<LibraryView />);
+
+    fireEvent.click(screen.getByRole("button", { name: "card:a.mp4" }), { ctrlKey: true });
+
+    expect(toggleSelected).toHaveBeenCalledWith("/videos/a.mp4");
+    expect(selectVideo).not.toHaveBeenCalled();
+    expect(selectOnly).not.toHaveBeenCalled();
+  });
+
+  it("a Cmd-click toggles the card without opening the Detail view", () => {
+    mockStore({ folder: "/videos", selectedPath: null });
+    mockScan({ data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }] });
+    render(<LibraryView />);
+
+    fireEvent.click(screen.getByRole("button", { name: "card:a.mp4" }), { metaKey: true });
+
+    expect(toggleSelected).toHaveBeenCalledWith("/videos/a.mp4");
+    expect(selectVideo).not.toHaveBeenCalled();
+  });
+
+  it("a Shift-click selects the range from the last-clicked card without navigating", () => {
+    mockStore({ folder: "/videos", selectedPath: null, lastClickedPath: "/videos/a.mp4" });
+    mockScan({
+      data: [
+        { path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 },
+        { path: "/videos/b.mp4", name: "b.mp4", extension: "mp4", size_bytes: 1 },
+        { path: "/videos/c.mp4", name: "c.mp4", extension: "mp4", size_bytes: 1 },
+      ],
+    });
+    render(<LibraryView />);
+
+    fireEvent.click(screen.getByRole("button", { name: "card:c.mp4" }), { shiftKey: true });
+
+    expect(setSelectedPaths).toHaveBeenCalledWith([
+      "/videos/a.mp4",
+      "/videos/b.mp4",
+      "/videos/c.mp4",
+    ]);
+    expect(selectVideo).not.toHaveBeenCalled();
+  });
+
+  it("falls back to a plain selection on Shift-click when there is no range anchor", () => {
+    mockStore({ folder: "/videos", selectedPath: null, lastClickedPath: null });
+    mockScan({ data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }] });
+    render(<LibraryView />);
+
+    fireEvent.click(screen.getByRole("button", { name: "card:a.mp4" }), { shiftKey: true });
+
+    expect(selectOnly).toHaveBeenCalledWith("/videos/a.mp4");
+    expect(selectVideo).toHaveBeenCalledWith("/videos/a.mp4");
+  });
+
+  it("reflects the store's selection on each card", () => {
+    mockStore({
+      folder: "/videos",
+      selectedPath: null,
+      selected: new Set(["/videos/a.mp4"]),
+    });
+    mockScan({
+      data: [
+        { path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 },
+        { path: "/videos/b.mp4", name: "b.mp4", extension: "mp4", size_bytes: 1 },
+      ],
+    });
+    render(<LibraryView />);
+
+    expect(screen.getByRole("button", { name: "card:a.mp4" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "card:b.mp4" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("selects every scanned file on Ctrl+A", () => {
+    mockStore({ folder: "/videos", selectedPath: null });
+    mockScan({
+      data: [
+        { path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 },
+        { path: "/videos/b.mp4", name: "b.mp4", extension: "mp4", size_bytes: 1 },
+      ],
+    });
+    render(<LibraryView />);
+
+    fireEvent.keyDown(window, { key: "a", ctrlKey: true });
+
+    expect(setSelectedPaths).toHaveBeenCalledWith(["/videos/a.mp4", "/videos/b.mp4"]);
+  });
+
+  it("selects every scanned file on Cmd+A", () => {
+    mockStore({ folder: "/videos", selectedPath: null });
+    mockScan({
+      data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }],
+    });
+    render(<LibraryView />);
+
+    fireEvent.keyDown(window, { key: "a", metaKey: true });
+
+    expect(setSelectedPaths).toHaveBeenCalledWith(["/videos/a.mp4"]);
+  });
+
+  it("does not react to Ctrl+A while the Detail view is open", () => {
+    mockStore({ folder: "/videos", selectedPath: "/videos/a.mp4" });
+    mockScan({
+      data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }],
+    });
+    render(<LibraryView />);
+
+    fireEvent.keyDown(window, { key: "a", ctrlKey: true });
+
+    expect(setSelectedPaths).not.toHaveBeenCalled();
+  });
+
+  it("clears the selection on Escape", () => {
+    mockStore({ folder: "/videos", selectedPath: null, selected: new Set(["/videos/a.mp4"]) });
+    mockScan({
+      data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }],
+    });
+    render(<LibraryView />);
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(clearSelection).toHaveBeenCalledOnce();
   });
 
   it("shows the Detail view instead of the grid once a video is selected", () => {
@@ -220,5 +416,77 @@ describe("LibraryView", () => {
     fireEvent.click(screen.getByRole("button", { name: "back-stub" }));
 
     expect(selectVideo).toHaveBeenCalledWith(null);
+  });
+
+  describe("bulk action bar", () => {
+    it("is hidden when nothing is selected", () => {
+      mockStore({ folder: "/videos", selectedPath: null });
+      mockScan({
+        data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }],
+      });
+      render(<LibraryView />);
+      expect(screen.queryByText(/ausgewählt/)).toBeNull();
+    });
+
+    it("shows the selection count and a preset picker once something is selected", () => {
+      mockStore({
+        folder: "/videos",
+        selectedPath: null,
+        selected: new Set(["/videos/a.mp4", "/videos/b.mp4"]),
+      });
+      mockScan({
+        data: [
+          { path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 },
+          { path: "/videos/b.mp4", name: "b.mp4", extension: "mp4", size_bytes: 1 },
+        ],
+      });
+      render(<LibraryView />);
+
+      expect(screen.getByText("2 ausgewählt")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Preset" })).toBeInTheDocument();
+    });
+
+    it("enqueues each selected path with the chosen preset and clears the selection", () => {
+      mockStore({
+        folder: "/videos",
+        selectedPath: null,
+        selected: new Set(["/videos/a.mp4", "/videos/b.mp4"]),
+      });
+      mockScan({
+        data: [
+          { path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 },
+          { path: "/videos/b.mp4", name: "b.mp4", extension: "mp4", size_bytes: 1 },
+        ],
+      });
+      render(<LibraryView />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Ausgewählte konvertieren" }));
+
+      expect(enqueueMutate).toHaveBeenCalledWith({
+        inputPath: "/videos/a.mp4",
+        presetId: "universal",
+      });
+      expect(enqueueMutate).toHaveBeenCalledWith({
+        inputPath: "/videos/b.mp4",
+        presetId: "universal",
+      });
+      expect(clearSelection).toHaveBeenCalledOnce();
+    });
+
+    it("clears the selection via the Clear-selection control", () => {
+      mockStore({
+        folder: "/videos",
+        selectedPath: null,
+        selected: new Set(["/videos/a.mp4"]),
+      });
+      mockScan({
+        data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }],
+      });
+      render(<LibraryView />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Auswahl aufheben" }));
+
+      expect(clearSelection).toHaveBeenCalledOnce();
+    });
   });
 });

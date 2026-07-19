@@ -63,11 +63,52 @@ describe("VideoCard", () => {
     expect(screen.getByRole("button", { name: "a.mp4" })).toBeInTheDocument();
   });
 
-  it("calls onSelect with the file path when clicked", () => {
+  it("calls onSelect with the file path and no modifiers on a plain click", () => {
     const onSelect = vi.fn();
     render(<VideoCard file={file} onSelect={onSelect} />);
     fireEvent.click(screen.getByRole("button", { name: "a.mp4" }));
-    expect(onSelect).toHaveBeenCalledWith("/videos/a.mp4");
+    expect(onSelect).toHaveBeenCalledWith("/videos/a.mp4", {
+      ctrl: false,
+      meta: false,
+      shift: false,
+    });
+  });
+
+  it("reports Ctrl/Cmd and Shift modifiers held during the click", () => {
+    const onSelect = vi.fn();
+    render(<VideoCard file={file} onSelect={onSelect} />);
+    const btn = screen.getByRole("button", { name: "a.mp4" });
+
+    fireEvent.click(btn, { ctrlKey: true });
+    expect(onSelect).toHaveBeenLastCalledWith("/videos/a.mp4", {
+      ctrl: true,
+      meta: false,
+      shift: false,
+    });
+
+    fireEvent.click(btn, { metaKey: true });
+    expect(onSelect).toHaveBeenLastCalledWith("/videos/a.mp4", {
+      ctrl: false,
+      meta: true,
+      shift: false,
+    });
+
+    fireEvent.click(btn, { shiftKey: true });
+    expect(onSelect).toHaveBeenLastCalledWith("/videos/a.mp4", {
+      ctrl: false,
+      meta: false,
+      shift: true,
+    });
+  });
+
+  it("is not marked selected by default", () => {
+    render(<VideoCard file={file} onSelect={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "a.mp4" })).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("marks itself selected via aria-pressed", () => {
+    render(<VideoCard file={file} onSelect={vi.fn()} selected />);
+    expect(screen.getByRole("button", { name: "a.mp4" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows no image while the thumbnail is still loading", () => {

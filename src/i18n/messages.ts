@@ -48,6 +48,9 @@ export const de = {
   "library.ffmpegMissing.body":
     "Vidforge benötigt ffmpeg und ffprobe, um Videos zu scannen und abzuspielen. Installiere beide und starte die App neu, oder hinterlege den Pfad in den Einstellungen. Ein In-App-Installer folgt in einem späteren Schritt.",
   "library.card.probeError": "Metadaten konnten nicht gelesen werden: {message}",
+  "library.selectCount": "{count} ausgewählt",
+  "library.selectConvert": "Ausgewählte konvertieren",
+  "library.selectClear": "Auswahl aufheben",
 
   // DetailView.
   "detail.error.title": "Metadaten-Fehler",
@@ -56,6 +59,7 @@ export const de = {
   "detail.panel.audio": "Audio",
   "detail.panel.subtitles": "Untertitel",
   "detail.panel.player": "Player",
+  "detail.panel.actions": "Aktionen",
   "detail.container": "container",
   "detail.duration": "dauer",
   "detail.size": "größe",
@@ -69,7 +73,26 @@ export const de = {
   "detail.sampleRate": "abtastrate",
   "detail.language": "sprache",
   "detail.language.unknown": "unbekannt",
-  "detail.player.comingSoon": "Player und Konvertierungs-Aktionen folgen demnächst.",
+  "detail.player.comingSoon": "Player folgt demnächst.",
+  "detail.convert": "Konvertieren",
+  "detail.repair": "Reparieren",
+  "detail.enqueued": "„{name}“ wurde der Warteschlange hinzugefügt.",
+  "detail.enqueueError": "Fehler beim Hinzufügen zur Warteschlange: {message}",
+
+  // Preset picker (DetailView + LibraryView bulk bar) — labels/descriptions for the built-in
+  // conversion/repair presets (ADR-PROJ-001 §4). `src/lib/presets.ts` maps a `PresetDto.id` to these.
+  "preset.selectLabel": "Preset",
+  "preset.universal": "Universal",
+  "preset.universal.desc": "Visuell verlustfrei, MP4/H.264 – der empfohlene Standard.",
+  "preset.efficient": "Effizient",
+  "preset.efficient.desc":
+    "Kleinere Dateien durch stärkere Kompression, minimal geringere Qualität.",
+  "preset.archive": "Archiv",
+  "preset.archive.desc": "Hohe Qualität für die Langzeitarchivierung als MKV.",
+  "preset.repair": "Reparieren",
+  "preset.repair.desc": "Remuxt die Datei ohne Neucodierung, um Beschädigungen zu beheben.",
+  "preset.custom": "Benutzerdefiniert",
+  "preset.custom.desc": "Manuell konfigurierte Encoding-Parameter.",
 
   // HomeView.
   "home.panel.shell": "Shell",
@@ -127,6 +150,19 @@ export const de = {
   "statusbar.scrollToTop": "Nach oben scrollen",
   "statusbar.scrollToTopShort": "↑ oben",
   "statusbar.devSuffix": "dev",
+  "statusbar.jobsIdleTooltip": "Keine aktiven Aufgaben",
+  "statusbar.jobsActiveTooltip": "{running} laufend, {queued} wartend",
+
+  // Job queue (status-bar process list, ADR-PROJ-001 §4).
+  "jobs.popover.title": "Warteschlange",
+  "jobs.popover.empty": "Keine Aufgaben.",
+  "jobs.popover.recent": "Zuletzt",
+  "jobs.cancel": "Abbrechen",
+  "jobs.state.queued": "wartend",
+  "jobs.state.running": "läuft",
+  "jobs.state.done": "fertig",
+  "jobs.state.failed": "fehlgeschlagen",
+  "jobs.state.cancelled": "abgebrochen",
 
   // FatalScreen (ADR-CORE-037, ADR-APP-032 — the UI's last-resort screen).
   "fatal.title": "Schwerwiegender Fehler",
@@ -191,6 +227,9 @@ export const en: Record<MessageKey, string> = {
   "library.ffmpegMissing.body":
     "Vidforge needs ffmpeg and ffprobe to scan and play videos. Install both and restart the app, or set the path in Settings. An in-app installer is coming in a later step.",
   "library.card.probeError": "Could not read metadata: {message}",
+  "library.selectCount": "{count} selected",
+  "library.selectConvert": "Convert selected",
+  "library.selectClear": "Clear selection",
 
   "detail.error.title": "Metadata error",
   "detail.panel.file": "File",
@@ -198,6 +237,7 @@ export const en: Record<MessageKey, string> = {
   "detail.panel.audio": "Audio",
   "detail.panel.subtitles": "Subtitles",
   "detail.panel.player": "Player",
+  "detail.panel.actions": "Actions",
   "detail.container": "container",
   "detail.duration": "duration",
   "detail.size": "size",
@@ -211,7 +251,23 @@ export const en: Record<MessageKey, string> = {
   "detail.sampleRate": "sample rate",
   "detail.language": "language",
   "detail.language.unknown": "unknown",
-  "detail.player.comingSoon": "Player and convert actions are coming soon.",
+  "detail.player.comingSoon": "Player support is coming soon.",
+  "detail.convert": "Convert",
+  "detail.repair": "Repair",
+  "detail.enqueued": 'Added "{name}" to the queue.',
+  "detail.enqueueError": "Failed to queue: {message}",
+
+  "preset.selectLabel": "Preset",
+  "preset.universal": "Universal",
+  "preset.universal.desc": "Visually lossless MP4/H.264 — the recommended default.",
+  "preset.efficient": "Efficient",
+  "preset.efficient.desc": "Smaller files via stronger compression, at a slightly lower quality.",
+  "preset.archive": "Archive",
+  "preset.archive.desc": "High quality for long-term archival as MKV.",
+  "preset.repair": "Repair",
+  "preset.repair.desc": "Remuxes the file without re-encoding to fix corruption.",
+  "preset.custom": "Custom",
+  "preset.custom.desc": "Manually configured encode parameters.",
 
   "home.panel.shell": "Shell",
   "home.panel.build": "Build",
@@ -261,6 +317,18 @@ export const en: Record<MessageKey, string> = {
   "statusbar.scrollToTop": "Scroll to top",
   "statusbar.scrollToTopShort": "↑ top",
   "statusbar.devSuffix": "dev",
+  "statusbar.jobsIdleTooltip": "No active jobs",
+  "statusbar.jobsActiveTooltip": "{running} running, {queued} queued",
+
+  "jobs.popover.title": "Queue",
+  "jobs.popover.empty": "No jobs.",
+  "jobs.popover.recent": "Recent",
+  "jobs.cancel": "Cancel",
+  "jobs.state.queued": "queued",
+  "jobs.state.running": "running",
+  "jobs.state.done": "done",
+  "jobs.state.failed": "failed",
+  "jobs.state.cancelled": "cancelled",
 
   "fatal.title": "Fatal error",
   "fatal.body":

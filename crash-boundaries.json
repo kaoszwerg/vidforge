@@ -18,6 +18,10 @@
     "src-tauri/src/lib.rs": {
       "spawns": 1,
       "why": "The log bridge (setup): forwards tracing records to the UI log view. On RecvError::Lagged it warns and KEEPS BRIDGING — the receiver is still valid, so the old `while let Ok(..)` loop, which ended the task and silently froze the log view for the rest of the session, is exactly what this entry exists to prevent. On RecvError::Closed the sender is gone (logging is shutting down): it logs that and ends, which is the only way this task is allowed to stop."
+    },
+    "src-tauri/src/jobs/queue.rs": {
+      "spawns": 2,
+      "why": "Two tasks. (1) The dispatcher (spawned once at startup): pulls enqueued job ids and runs up to `concurrency` at a time behind a Semaphore. It ends ONLY when its mpsc channel closes (process shutdown) — logged, not silent — and a semaphore-closed acquire is handled rather than assumed. (2) The per-job worker (spawned per job): runs one ffmpeg child, streams -progress into percent, and on cancel kills the child and removes the partial output. A single job's spawn failure, non-zero exit or wait error becomes JobState::Failed (logged + emitted) — it never takes the worker or the dispatcher down, so one bad file cannot stop the queue."
     }
   }
 }

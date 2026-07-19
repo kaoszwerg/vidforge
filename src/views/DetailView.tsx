@@ -1,10 +1,15 @@
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Film } from "lucide-react";
 import { IconButton } from "../components/ui/IconButton";
 import { HudPanel } from "../components/ui/HudPanel";
 import { MetaRow } from "../components/ui/MetaRow";
+import { Select } from "../components/ui/Select";
+import { Button } from "../components/ui/Button";
 import { QualityBadge } from "../components/QualityBadge";
 import { useProbe } from "../hooks/useProbe";
 import { useThumbnail } from "../hooks/useThumbnail";
+import { useEnqueueJob, usePresets } from "../hooks/useJobs";
+import { isConvertiblePreset, presetDescriptionKey, presetLabelKey } from "../lib/presets";
 import { useT } from "../i18n";
 import { errorMessage } from "../lib/errors";
 import { formatBitrate, formatBytes, formatDuration, formatFps } from "../lib/format";
@@ -19,6 +24,11 @@ function fileNameFromPath(path: string): string {
   return parts.at(-1) || path;
 }
 
+/** How long the "queued" confirmation stays visible after Convert/Repair (ADR-PROJ-001 §4) — long
+ * enough to read, short enough that it does not linger as stale state once the user moves on; the job
+ * itself keeps living in the status-bar process list regardless. */
+const CONFIRMATION_MS = 4000;
+
 export interface DetailViewProps {
   /** Absolute path of the video to show, as produced by `scan_folder`. */
   path: string;
@@ -28,15 +38,44 @@ export interface DetailViewProps {
 
 /**
  * Full technical metadata for one video (ADR-PROJ-001): container/duration/size/bitrate, the video
- * stream, every audio stream, every subtitle track, plus the thumbnail and a back control. The player
- * and convert/repair actions are a later slice (Phase 3/4 of `PLAN.md`) — this view leaves a clearly
- * labelled placeholder for them rather than a half-built player.
+ * stream, every audio stream, every subtitle track, the thumbnail, a back control, and the Convert/Repair
+ * actions that queue a job (`useEnqueueJob`) without blocking this view — the job then lives in the
+ * status-bar process list. The player itself is a later slice (Phase 3 of `PLAN.md`); this view leaves a
+ * clearly labelled placeholder for it rather than a half-built player.
  */
 export function DetailView({ path, onBack }: DetailViewProps) {
   const t = useT();
   const probe = useProbe(path);
   const thumb = useThumbnail(path);
   const name = fileNameFromPath(path);
+
+  const presets = usePresets();
+  const enqueueJob = useEnqueueJob();
+  const convertPresets = (presets.data ?? []).filter((p) => isConvertiblePreset(p.id));
+  const [presetId, setPresetId] = useState("universal");
+  const selectedPreset = convertPresets.find((p) => p.id === presetId);
+
+  const [confirmation, setConfirmation] = useState<string | null>(null);
+  const confirmationTimeout = useRef<number | undefined>(undefined);
+  // Clears any pending "dismiss the confirmation" timer if the view unmounts first (e.g. the user hits
+  // Back right after enqueueing) — otherwise the timer would fire a setState on an unmounted component.
+  useEffect(() => () => window.clearTimeout(confirmationTimeout.current), []);
+
+  const enqueue = (idToUse: string) => {
+    enqueueJob.mutate(
+      { inputPath: path, presetId: idToUse },
+      {
+        onSuccess: () => {
+          window.clearTimeout(confirmationTimeout.current);
+          setConfirmation(t("detail.enqueued", { name }));
+          confirmationTimeout.current = window.setTimeout(
+            () => setConfirmation(null),
+            CONFIRMATION_MS,
+          );
+        },
+      },
+    );
+  };
 
   return (
     <div className="h-full space-y-4 overflow-auto p-6">
@@ -162,6 +201,54 @@ export function DetailView({ path, onBack }: DetailViewProps) {
 
             <HudPanel accent="cyan" label={t("detail.panel.player")}>
               <p className="text-dim text-sm">{t("detail.player.comingSoon")}</p>
+            </HudPanel>
+
+            <HudPanel accent="green" label={t("detail.panel.actions")}>
+              <div className="space-y-3">
+                {presets.isPending ? (
+                  <p className="text-dim text-sm">{t("common.loading")}</p>
+                ) : presets.isError ? (
+                  <p className="text-danger text-sm">{errorMessage(presets.error)}</p>
+                ) : (
+                  <Select
+                    label={t("preset.selectLabel")}
+                    value={presetId}
+                    onChange={setPresetId}
+                    options={convertPresets.map((p) => ({
+                      value: p.id,
+                      label: t(presetLabelKey(p.id)),
+                    }))}
+                  />
+                )}
+                {selectedPreset ? (
+                  <p className="text-dim text-xs">{t(presetDescriptionKey(selectedPreset.id))}</p>
+                ) : null}
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    accent="green"
+                    onClick={() => enqueue(presetId)}
+                    disabled={enqueueJob.isPending || convertPresets.length === 0}
+                  >
+                    {t("detail.convert")}
+                  </Button>
+                  <Button
+                    accent="gold"
+                    variant="ghost"
+                    onClick={() => enqueue("repair")}
+                    disabled={enqueueJob.isPending}
+                  >
+                    {t("detail.repair")}
+                  </Button>
+                </div>
+
+                {confirmation ? <p className="text-green text-xs">{confirmation}</p> : null}
+                {enqueueJob.isError ? (
+                  <p className="text-danger text-xs">
+                    {t("detail.enqueueError", { message: errorMessage(enqueueJob.error) })}
+                  </p>
+                ) : null}
+              </div>
             </HudPanel>
           </div>
         </div>

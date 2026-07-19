@@ -180,4 +180,63 @@ describe("api", () => {
       await expect(api.pickFolder()).resolves.toBeNull();
     });
   });
+
+  it("listPresets calls list_presets with no args", async () => {
+    const presets = [{ id: "universal", container: "mp4", reencodes: true }];
+    mockInvoke.mockResolvedValue(presets);
+    await expect(api.listPresets()).resolves.toEqual(presets);
+    expect(mockInvoke).toHaveBeenCalledWith("list_presets");
+  });
+
+  describe("enqueueJob", () => {
+    const job = {
+      id: "job-1",
+      input_path: "/videos/a.mp4",
+      input_name: "a.mp4",
+      output_path: "/videos/vidforge-out/a.mp4",
+      preset_id: "universal",
+      state: "Queued",
+      percent: 0,
+      error: null,
+    };
+
+    it("sends a null custom when omitted", async () => {
+      mockInvoke.mockResolvedValue(job);
+      await expect(api.enqueueJob("/videos/a.mp4", "universal")).resolves.toEqual(job);
+      expect(mockInvoke).toHaveBeenCalledWith("enqueue_job", {
+        inputPath: "/videos/a.mp4",
+        presetId: "universal",
+        custom: null,
+      });
+    });
+
+    it("forwards an explicit custom encode", async () => {
+      const custom = {
+        container: "mkv",
+        video_codec: "hevc",
+        crf: 20,
+        audio_codec: "opus",
+        audio_bitrate_k: 160,
+      };
+      mockInvoke.mockResolvedValue(job);
+      await api.enqueueJob("/videos/a.mp4", "custom", custom);
+      expect(mockInvoke).toHaveBeenCalledWith("enqueue_job", {
+        inputPath: "/videos/a.mp4",
+        presetId: "custom",
+        custom,
+      });
+    });
+  });
+
+  it("cancelJob calls cancel_job with the id", async () => {
+    mockInvoke.mockResolvedValue(undefined);
+    await api.cancelJob("job-1");
+    expect(mockInvoke).toHaveBeenCalledWith("cancel_job", { id: "job-1" });
+  });
+
+  it("listJobs calls list_jobs with no args", async () => {
+    mockInvoke.mockResolvedValue([]);
+    await expect(api.listJobs()).resolves.toEqual([]);
+    expect(mockInvoke).toHaveBeenCalledWith("list_jobs");
+  });
 });

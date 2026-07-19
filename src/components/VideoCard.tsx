@@ -1,4 +1,5 @@
 import { AlertTriangle, Film } from "lucide-react";
+import type { MouseEvent } from "react";
 import { Button } from "./ui/Button";
 import { HudPanel } from "./ui/HudPanel";
 import { QualityBadge } from "./QualityBadge";
@@ -9,10 +10,21 @@ import { errorMessage } from "../lib/errors";
 import { formatBytes, formatDuration } from "../lib/format";
 import type { ScannedFile } from "../bindings/ScannedFile";
 
+/** The click modifiers `VideoCard` reports to `onSelect` — enough for the Library grid's standard-OS
+ * multiselect mechanics (plain / Ctrl-Cmd / Shift) without the card needing to know what they mean. */
+export interface SelectModifiers {
+  ctrl: boolean;
+  meta: boolean;
+  shift: boolean;
+}
+
 export interface VideoCardProps {
   file: ScannedFile;
-  /** Called with the file's absolute path when the card is activated. */
-  onSelect: (path: string) => void;
+  /** Called with the file's absolute path and the click's modifier keys when the card is activated —
+   * the Library view decides what a plain vs. Ctrl/Cmd vs. Shift click does (ADR-PROJ-001). */
+  onSelect: (path: string, modifiers: SelectModifiers) => void;
+  /** Whether this card is part of the current bulk multiselect (Library view). */
+  selected?: boolean;
 }
 
 /**
@@ -23,22 +35,31 @@ export interface VideoCardProps {
  * whole card failing (ADR-CORE-037: a single bad file never takes the grid down).
  *
  * The whole card is the click target (`Button` in its unstyled `ghost` variant, so it carries no
- * chamfer/fill of its own and the `HudPanel` visuals show through) — clicking it hands the file's path
- * to `onSelect`, which the Library view uses to open the Detail view.
+ * chamfer/fill of its own and the `HudPanel` visuals show through). It does not decide what a click
+ * means — it reports the path plus which modifier keys were held to `onSelect`, and the Library view
+ * (which owns the bulk-selection store and the grid order Shift-click needs) interprets them.
  */
-export function VideoCard({ file, onSelect }: VideoCardProps) {
+export function VideoCard({ file, onSelect, selected = false }: VideoCardProps) {
   const t = useT();
   const thumb = useThumbnail(file.path);
   const probe = useProbe(file.path);
 
+  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
+    onSelect(file.path, { ctrl: e.ctrlKey, meta: e.metaKey, shift: e.shiftKey });
+  };
+
   return (
     <Button
       variant="ghost"
-      onClick={() => onSelect(file.path)}
+      onClick={handleClick}
       className="block w-full p-0 text-left"
       aria-label={file.name}
+      aria-pressed={selected}
     >
-      <HudPanel accent="cyan" className="hover:neon-glow-cyan overflow-hidden transition-shadow">
+      <HudPanel
+        accent={selected ? "green" : "cyan"}
+        className={`hover:neon-glow-cyan overflow-hidden transition-shadow ${selected ? "neon-glow-green" : ""}`}
+      >
         <div className="flex flex-col gap-2">
           <div className="hud-clip-sm bg-elevated relative flex aspect-video w-full items-center justify-center overflow-hidden">
             {thumb.data ? (

@@ -10,6 +10,12 @@ export interface HudButtonStyle {
   variant?: "solid" | "ghost";
 }
 
+/** Shared `disabled:` treatment for every HUD button surface — one place so a `Convert`/`Cancel`
+ * control disabled while a mutation is in flight (DetailView, LibraryView's bulk bar, the status-bar
+ * job list) looks disabled without every call site repeating the same two Tailwind utilities
+ * (ADR-CORE-005). No visual effect while the control is enabled. */
+const DISABLED_CLASSES = "disabled:cursor-not-allowed disabled:opacity-40";
+
 /**
  * Tailwind class string for a HUD button surface (ADR-APP-020, ADR-APP-026). Centralised so `Button`,
  * `IconButton` and any future control render an identical surface instead of each re-deriving the
@@ -25,9 +31,9 @@ export function hudButtonClass({
   variant = "solid",
 }: HudButtonStyle = {}): string {
   if (variant === "ghost") {
-    return `transition-colors hover:text-cyan${active ? " text-cyan" : ""}`;
+    return `transition-colors hover:text-cyan ${DISABLED_CLASSES}${active ? " text-cyan" : ""}`;
   }
-  return `hud-clip-sm hud-btn hud-accent-${accent}${active ? " hud-btn-active" : ""}`;
+  return `hud-clip-sm hud-btn hud-accent-${accent} ${DISABLED_CLASSES}${active ? " hud-btn-active" : ""}`;
 }
 
 // `Map` rather than plain-object bracket access: the accent is chosen at runtime, and `obj[accent]`
@@ -45,4 +51,19 @@ const ACCENT_TEXT = new Map<HudAccent, string>([
  * and any future accent-coloured label agree on which token means "gold" (ADR-CORE-005). */
 export function hudAccentTextClass(accent: HudAccent): string {
   return ACCENT_TEXT.get(accent) ?? "text-cyan";
+}
+
+const ACCENT_BG = new Map<HudAccent, string>([
+  ["cyan", "bg-cyan"],
+  ["green", "bg-green"],
+  ["gold", "bg-gold"],
+  ["purple", "bg-purple"],
+  ["danger", "bg-danger"],
+]);
+
+/** Tailwind background-colour class for a HUD accent (ADR-APP-020) — the fill counterpart of
+ * `hudAccentTextClass`, used by `ProgressBar` and anything else that paints a solid accent surface
+ * rather than colouring text (ADR-CORE-005). */
+export function hudAccentBgClass(accent: HudAccent): string {
+  return ACCENT_BG.get(accent) ?? "bg-cyan";
 }

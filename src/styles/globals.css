@@ -426,7 +426,25 @@ input[type="range"]:disabled::-moz-range-thumb {
     inset 0 0 30px rgb(var(--saga-neon-cyan-rgb) / 0.04);
 }
 @media (prefers-reduced-motion: reduce) {
-  .window-frame {
+  .window-frame,
+  .window-frame.is-active {
     animation: none;
   }
+}
+
+/* ── Job-queue activity signal (ADR-PROJ-001 §4). ──
+   Toggled by `App` (`jobs.active` from `useJobs`) whenever the queue has work in flight: the same
+   conic sweep spins faster (`animation-duration` only — reuses `frame-rotate` and the base gradient, so
+   nothing about the idle look needs restating here) and the inner wrapper's glow brightens. The glow is
+   a static `box-shadow`, not an animation, so it is unaffected by `prefers-reduced-motion` and is exactly
+   the "static accent" that state calls for once the query above has stopped the sweep. Returns to the
+   calm 12s idle sweep the instant the queue drains (the class is simply removed). */
+.window-frame.is-active {
+  animation-duration: 3s;
+}
+.window-frame.is-active > .window-frame-inner {
+  box-shadow:
+    inset 0 0 20px rgb(var(--saga-neon-green-rgb) / 0.14),
+    inset 0 0 40px rgb(var(--saga-neon-cyan-rgb) / 0.1),
+    inset 0 0 4px rgb(var(--saga-neon-cyan-rgb) / 0.35);
 }

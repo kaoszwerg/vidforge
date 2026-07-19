@@ -4,9 +4,12 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { BuildInfo } from "../bindings/BuildInfo";
 import type { CrashReport } from "../bindings/CrashReport";
+import type { CustomEncode } from "../bindings/CustomEncode";
 import type { FfmpegStatus } from "../bindings/FfmpegStatus";
+import type { JobDto } from "../bindings/JobDto";
 import type { LogRecord } from "../bindings/LogRecord";
 import type { MediaInfo } from "../bindings/MediaInfo";
+import type { PresetDto } from "../bindings/PresetDto";
 import type { ScannedFile } from "../bindings/ScannedFile";
 import type { SettingsDto } from "../bindings/SettingsDto";
 
@@ -90,4 +93,21 @@ export const api = {
    * its own Tauri plugin commands directly; `dialog:allow-open` is granted in `capabilities/default.json`.
    */
   pickFolder: () => open({ directory: true }),
+  /** The built-in conversion/repair presets (ADR-PROJ-001 §4). Labels/descriptions are localized
+   * frontend-side from `id` (`src/lib/presets.ts`) — the backend carries no display text. */
+  listPresets: () => invoke<PresetDto[]>("list_presets"),
+  /**
+   * Queue a conversion/repair of one file. `custom` is only meaningful for the `"custom"` preset and
+   * is otherwise sent as `null`, mirroring `updateSettings`'s partial-update convention. Output is
+   * strictly non-destructive (ADR-PROJ-001): the backend writes to a separate output directory and
+   * never touches `inputPath`.
+   */
+  enqueueJob: (inputPath: string, presetId: string, custom?: CustomEncode) =>
+    invoke<JobDto>("enqueue_job", { inputPath, presetId, custom: custom ?? null }),
+  /** Request cancellation of a queued or running job by id. The job's terminal state (`Cancelled`)
+   * arrives via the `job://update` event, not this call's return value. */
+  cancelJob: (id: string) => invoke<void>("cancel_job", { id }),
+  /** A snapshot of every job (queued, running, finished), in enqueue order — the status-bar process
+   * list's initial load; live changes stream in afterwards via `job://update` (`useJobs`). */
+  listJobs: () => invoke<JobDto[]>("list_jobs"),
 };

@@ -187,6 +187,62 @@ pub struct MediaInfo {
     pub quality: QualityTier,
 }
 
+/// A conversion/repair preset the user can pick. The ffmpeg argv is built server-side
+/// (`jobs::preset`); the frontend maps `id` to a localized name/description.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct PresetDto {
+    /// `"universal"` | `"efficient"` | `"archive"` | `"repair"` | `"custom"`.
+    pub id: String,
+    /// Target container extension (e.g. `"mp4"`, `"mkv"`). For `repair` this is the source's container.
+    pub container: String,
+    /// Whether the output re-encodes the video (false = remux/copy, as in `repair`).
+    pub reencodes: bool,
+}
+
+/// Custom encode parameters — used only when a job's preset id is `"custom"`.
+#[derive(Debug, Clone, Deserialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct CustomEncode {
+    /// Output container: `"mp4"` | `"mkv"` | `"avi"`.
+    pub container: String,
+    /// Video codec: `"h264"` | `"hevc"` | `"av1"` | `"ffv1"` | `"copy"`.
+    pub video_codec: String,
+    /// Constant-quality value (codec-dependent; ignored for `copy`/`ffv1`).
+    pub crf: Option<u32>,
+    /// Audio codec: `"aac"` | `"opus"` | `"flac"` | `"copy"`.
+    pub audio_codec: String,
+    /// Audio bitrate in kbit/s (ignored for `copy`/`flac`).
+    pub audio_bitrate_k: Option<u32>,
+}
+
+/// Lifecycle state of a job.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub enum JobState {
+    Queued,
+    Running,
+    Done,
+    Failed,
+    Cancelled,
+}
+
+/// A conversion/repair job, as shown in the queue and the status-bar process list.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct JobDto {
+    pub id: String,
+    pub input_path: String,
+    pub input_name: String,
+    pub output_path: String,
+    pub preset_id: String,
+    pub state: JobState,
+    /// Progress 0..100. Meaningful while `Running`; `Done` is 100.
+    pub percent: f64,
+    /// Failure detail when `state == Failed`.
+    pub error: Option<String>,
+}
+
 fn default_ui_scale() -> f64 {
     1.0
 }

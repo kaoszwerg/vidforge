@@ -24,6 +24,16 @@ All notable changes to this project are documented here. The format follows
   quality badge (green at ≥1080p) and key metadata. A **Detail view** shows the full technical metadata.
 - HUD primitives `Badge`, `Dropzone`, `MetaRow`, `QualityBadge`, `VideoCard`, and formatting helpers
   (`src/lib/format.ts`). New dependency `@tauri-apps/plugin-dialog` (native folder picker).
+- Conversion/repair **job queue** (backend): concurrency-limited workers run one ffmpeg child per job with
+  live `-progress` percent, cancel (kills the child + removes the partial output) and `job://update`
+  events — strictly non-destructive (output to a `vidforge-out` folder; the source is never overwritten).
+  Presets: Universal (MP4/H.264 CRF 18), Efficient (MP4/HEVC), Archive (lossless FFV1/MKV), Repair (remux),
+  Custom. Commands `list_presets`/`enqueue_job`/`cancel_job`/`list_jobs`.
+- **Status-bar process list** (bottom-right, clickable): running jobs with progress bars + cancel, plus the
+  queued/upcoming jobs. Convert/Repair actions on the Detail view. **Bulk multiselect** in the Library
+  (click / Ctrl-Cmd-click / Shift-range / Ctrl+A / Escape) with a "Convert selected" action.
+- The animated window border energizes while jobs run and settles when the queue drains. New HUD
+  `ProgressBar` primitive.
 
 ### Fixed
 

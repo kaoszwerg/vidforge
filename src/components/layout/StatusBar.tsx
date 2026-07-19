@@ -1,16 +1,23 @@
 import { Button } from "../ui/Button";
+import { JobsIndicator } from "./JobsIndicator";
 import { useBuildInfo } from "../../hooks/useBuildInfo";
+import type { UseJobsResult } from "../../hooks/useJobs";
 import { useT } from "../../i18n";
 import { useUiStore } from "../../store/ui";
 import { APP_NAME } from "../../lib/app";
 
-/** Bottom status strip: build identity (click → About dialog) and the scroll-to-top control. */
+/** Bottom status strip: build identity (click → About dialog), the scroll-to-top control, and the
+ * clickable job-queue indicator (bottom-right, `JobsIndicator`) — `jobs` is computed once in `App` via
+ * `useJobs()` and passed down, the same pattern `canScrollTop`/`onScrollTop` already use, so the queue's
+ * live event subscription is not re-established once per consumer. */
 export function StatusBar({
   canScrollTop = false,
   onScrollTop,
+  jobs,
 }: {
   canScrollTop?: boolean;
   onScrollTop?: () => void;
+  jobs: UseJobsResult;
 }) {
   const { data: build } = useBuildInfo();
   const setAboutOpen = useUiStore((s) => s.setAboutOpen);
@@ -46,6 +53,7 @@ export function StatusBar({
             {t("statusbar.scrollToTopShort")}
           </Button>
         ) : null}
+        <JobsIndicator jobs={jobs} />
       </div>
     </div>
   );

@@ -13,12 +13,30 @@ export interface LibraryState {
    * is shown instead). Not persisted: a selection surviving a relaunch would either point at a file
    * that moved since, or force a probe before the grid has even rendered. */
   selectedPath: string | null;
+  /** Bulk multiselect for the Library grid's action bar (absolute paths). Not persisted — same reasoning
+   * as `selectedPath`: a selection surviving a relaunch could point at files that moved, or a folder
+   * that has not even been re-scanned yet. */
+  selected: Set<string>;
+  /** Anchor for Shift-click range selection: the path most recently touched by a plain or Ctrl/Cmd
+   * click. `null` once cleared or a new folder is chosen. */
+  lastClickedPath: string | null;
 
-  /** Choose a folder. Clears any video selection — a selection from the previous folder's grid has
-   * no meaning once the folder (and therefore the scan results) changes. */
+  /** Choose a folder. Clears any video selection and the bulk selection — both belong to the previous
+   * folder's grid, which no longer exists once the folder (and therefore the scan results) changes. */
   setFolder: (folder: string | null) => void;
   /** Select a video for the Detail view, or `null` to return to the grid. */
   selectVideo: (path: string | null) => void;
+  /** Plain click (VideoCard, ADR-PROJ-001): replace the bulk selection with exactly this path and set
+   * it as the new Shift-click range anchor. */
+  selectOnly: (path: string) => void;
+  /** Ctrl/Cmd-click: toggle this path's membership without disturbing the rest of the selection. */
+  toggleSelected: (path: string) => void;
+  /** Shift-click range / Ctrl+A select-all: replace the selection with an explicit list of paths — the
+   * store has no notion of grid order, so the caller (LibraryView, which has the scanned file list)
+   * computes the range or the full set. */
+  setSelectedPaths: (paths: string[]) => void;
+  /** Escape, or after a bulk action has been dispatched. */
+  clearSelection: () => void;
 }
 
 export const useLibraryStore = create<LibraryState>()(
@@ -26,9 +44,23 @@ export const useLibraryStore = create<LibraryState>()(
     (set) => ({
       folder: null,
       selectedPath: null,
+      selected: new Set<string>(),
+      lastClickedPath: null,
 
-      setFolder: (folder) => set({ folder, selectedPath: null }),
+      setFolder: (folder) =>
+        set({ folder, selectedPath: null, selected: new Set(), lastClickedPath: null }),
       selectVideo: (selectedPath) => set({ selectedPath }),
+
+      selectOnly: (path) => set({ selected: new Set([path]), lastClickedPath: path }),
+      toggleSelected: (path) =>
+        set((s) => {
+          const next = new Set(s.selected);
+          if (next.has(path)) next.delete(path);
+          else next.add(path);
+          return { selected: next, lastClickedPath: path };
+        }),
+      setSelectedPaths: (paths) => set({ selected: new Set(paths) }),
+      clearSelection: () => set({ selected: new Set(), lastClickedPath: null }),
     }),
     {
       name: "app-library",

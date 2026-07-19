@@ -9,6 +9,7 @@ pub mod crash;
 pub mod dto;
 pub mod error;
 pub mod ffmpeg;
+pub mod jobs;
 pub mod logging;
 pub mod media;
 pub mod settings;
@@ -60,6 +61,10 @@ pub fn run() {
             commands::media::scan_folder,
             commands::media::probe_media,
             commands::media::get_thumbnail,
+            commands::jobs::list_presets,
+            commands::jobs::enqueue_job,
+            commands::jobs::cancel_job,
+            commands::jobs::list_jobs,
             commands::open_external,
             commands::report_crash,
             commands::pending_crash,
@@ -124,6 +129,14 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     });
 
     app.manage(AppState::new(&data_dir));
+    // The job queue runs conversions/repairs off the UI thread. Its worker concurrency is taken from
+    // settings at startup (ADR-PROJ-001 §4); the dispatcher/worker tasks are recorded in
+    // crash-boundaries.json (ADR-APP-032).
+    let concurrency = app.state::<AppState>().settings.get().job_concurrency as usize;
+    app.manage(jobs::queue::JobQueue::start(
+        app.handle().clone(),
+        concurrency,
+    ));
     // Close handler is always registered; it consults the live `minimize_to_tray` setting. The tray
     // icon itself is installed only when the setting is on (default off).
     tray::install_close_handler(app.handle());

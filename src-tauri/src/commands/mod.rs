@@ -7,6 +7,7 @@ use crate::settings::SettingsPatch;
 use crate::state::AppState;
 use tauri::State;
 
+pub mod jobs;
 pub mod media;
 
 /// Record a fatal error from the UI runtime (ADR-CORE-037, ADR-APP-032).

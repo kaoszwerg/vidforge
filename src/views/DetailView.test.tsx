@@ -5,10 +5,12 @@ import { DetailView } from "./DetailView";
 vi.mock("../hooks/useThumbnail", () => ({ useThumbnail: vi.fn() }));
 vi.mock("../hooks/useProbe", () => ({ useProbe: vi.fn() }));
 vi.mock("../hooks/useSettings", () => ({ useSettings: vi.fn(), useUpdateSettings: vi.fn() }));
+vi.mock("../hooks/useJobs", () => ({ usePresets: vi.fn(), useEnqueueJob: vi.fn() }));
 
 import { useThumbnail } from "../hooks/useThumbnail";
 import { useProbe } from "../hooks/useProbe";
 import { useSettings } from "../hooks/useSettings";
+import { usePresets, useEnqueueJob } from "../hooks/useJobs";
 
 const PATH = "C:\\videos\\Trip to the Coast.mp4";
 
@@ -49,6 +51,35 @@ function mockProbe(overrides: Partial<ReturnType<typeof useProbe>> = {}) {
   } as ReturnType<typeof useProbe>);
 }
 
+const PRESETS = [
+  { id: "universal", container: "mp4", reencodes: true },
+  { id: "efficient", container: "mp4", reencodes: true },
+  { id: "archive", container: "mkv", reencodes: true },
+  { id: "repair", container: "source", reencodes: false },
+  { id: "custom", container: "mp4", reencodes: true },
+];
+
+function mockPresets(overrides: Partial<ReturnType<typeof usePresets>> = {}) {
+  vi.mocked(usePresets).mockReturnValue({
+    data: PRESETS,
+    isPending: false,
+    isError: false,
+    error: null,
+    ...overrides,
+  } as ReturnType<typeof usePresets>);
+}
+
+const enqueueMutate = vi.fn();
+function mockEnqueue(overrides: Partial<ReturnType<typeof useEnqueueJob>> = {}) {
+  vi.mocked(useEnqueueJob).mockReturnValue({
+    mutate: enqueueMutate,
+    isPending: false,
+    isError: false,
+    error: null,
+    ...overrides,
+  } as ReturnType<typeof useEnqueueJob>);
+}
+
 describe("DetailView", () => {
   beforeEach(() => {
     vi.mocked(useSettings).mockReturnValue({ data: { language: "de" } } as ReturnType<
@@ -56,6 +87,9 @@ describe("DetailView", () => {
     >);
     mockThumb();
     mockProbe();
+    enqueueMutate.mockReset();
+    mockPresets();
+    mockEnqueue();
   });
 
   it("derives the display name from the path (Windows separators)", () => {
@@ -142,5 +176,102 @@ describe("DetailView", () => {
     mockThumb({ data: "data:image/jpeg;base64,abc" });
     const { container } = render(<DetailView path={PATH} onBack={vi.fn()} />);
     expect(container.querySelector("img")).toHaveAttribute("src", "data:image/jpeg;base64,abc");
+  });
+
+  describe("Convert/Repair actions", () => {
+    it("offers the re-encoding built-in presets but not repair or custom", () => {
+      mockProbe({ data: mediaInfo });
+      render(<DetailView path={PATH} onBack={vi.fn()} />);
+
+      fireEvent.click(screen.getByRole("combobox", { name: "Preset" }));
+
+      expect(screen.getByRole("option", { name: "Universal" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "Effizient" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "Archiv" })).toBeInTheDocument();
+      expect(screen.queryByRole("option", { name: "Reparieren" })).toBeNull();
+      expect(screen.queryByRole("option", { name: "Benutzerdefiniert" })).toBeNull();
+    });
+
+    it("defaults to the Universal preset and shows its description", () => {
+      mockProbe({ data: mediaInfo });
+      render(<DetailView path={PATH} onBack={vi.fn()} />);
+      expect(screen.getByRole("combobox", { name: "Preset" })).toHaveTextContent("Universal");
+      expect(
+        screen.getByText("Visuell verlustfrei, MP4/H.264 – der empfohlene Standard."),
+      ).toBeInTheDocument();
+    });
+
+    it("enqueues a conversion job with the selected preset on Convert", () => {
+      mockProbe({ data: mediaInfo });
+      render(<DetailView path={PATH} onBack={vi.fn()} />);
+
+      fireEvent.click(screen.getByRole("combobox", { name: "Preset" }));
+      fireEvent.click(screen.getByRole("option", { name: "Archiv" }));
+      fireEvent.click(screen.getByRole("button", { name: "Konvertieren" }));
+
+      expect(enqueueMutate).toHaveBeenCalledWith(
+        { inputPath: PATH, presetId: "archive" },
+        expect.objectContaining({ onSuccess: expect.any(Function) }),
+      );
+    });
+
+    it("enqueues the fixed repair preset on Repair, ignoring the picker", () => {
+      mockProbe({ data: mediaInfo });
+      render(<DetailView path={PATH} onBack={vi.fn()} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Reparieren" }));
+
+      expect(enqueueMutate).toHaveBeenCalledWith(
+        { inputPath: PATH, presetId: "repair" },
+        expect.objectContaining({ onSuccess: expect.any(Function) }),
+      );
+    });
+
+    it("shows a brief confirmation once the enqueue succeeds", () => {
+      enqueueMutate.mockImplementation((_vars, opts: { onSuccess?: () => void }) => {
+        opts.onSuccess?.();
+      });
+      mockProbe({ data: mediaInfo });
+      render(<DetailView path={PATH} onBack={vi.fn()} />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Konvertieren" }));
+
+      expect(
+        screen.getByText("„Trip to the Coast.mp4“ wurde der Warteschlange hinzugefügt."),
+      ).toBeInTheDocument();
+    });
+
+    it("shows the enqueue error instead of crashing", () => {
+      mockEnqueue({ isError: true, error: new Error("queue full") });
+      mockProbe({ data: mediaInfo });
+      render(<DetailView path={PATH} onBack={vi.fn()} />);
+
+      expect(
+        screen.getByText("Fehler beim Hinzufügen zur Warteschlange: queue full"),
+      ).toBeInTheDocument();
+    });
+
+    it("disables Convert and Repair while a job is being enqueued", () => {
+      mockEnqueue({ isPending: true });
+      mockProbe({ data: mediaInfo });
+      render(<DetailView path={PATH} onBack={vi.fn()} />);
+
+      expect(screen.getByRole("button", { name: "Konvertieren" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Reparieren" })).toBeDisabled();
+    });
+
+    it("shows a loading state while the preset list is loading", () => {
+      mockPresets({ data: undefined, isPending: true });
+      mockProbe({ data: mediaInfo });
+      render(<DetailView path={PATH} onBack={vi.fn()} />);
+      expect(screen.getByText("Lädt…")).toBeInTheDocument();
+    });
+
+    it("shows a preset load error instead of crashing", () => {
+      mockPresets({ data: undefined, isError: true, error: new Error("presets unavailable") });
+      mockProbe({ data: mediaInfo });
+      render(<DetailView path={PATH} onBack={vi.fn()} />);
+      expect(screen.getByText("presets unavailable")).toBeInTheDocument();
+    });
   });
 });

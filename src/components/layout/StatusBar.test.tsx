@@ -6,6 +6,7 @@ import { APP_NAME } from "../../lib/app";
 import { useUiStore } from "../../store/ui";
 import { settingsDto } from "../../test/settings";
 import type { BuildInfo } from "../../bindings/BuildInfo";
+import type { UseJobsResult } from "../../hooks/useJobs";
 
 vi.mock("../../api/commands", () => ({
   api: {
@@ -16,6 +17,10 @@ vi.mock("../../api/commands", () => ({
 
 import { api } from "../../api/commands";
 
+function idleJobs(): UseJobsResult {
+  return { jobs: [], isLoading: false, error: null, running: 0, queued: 0, active: false };
+}
+
 const build: BuildInfo = {
   version: "0.1.0",
   channel: "dev",
@@ -25,11 +30,11 @@ const build: BuildInfo = {
   commit_date: "2026-07-11T00:00:00Z",
 };
 
-function renderStatusBar(props: Parameters<typeof StatusBar>[0] = {}) {
+function renderStatusBar(props: Partial<Parameters<typeof StatusBar>[0]> = {}) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <StatusBar {...props} />
+      <StatusBar jobs={idleJobs()} {...props} />
     </QueryClientProvider>,
   );
 }

@@ -10,6 +10,7 @@ import { LogsView } from "./views/LogsView";
 import { SettingsView } from "./views/SettingsView";
 import { useScrollTop } from "./hooks/useScrollTop";
 import { useApplyUiScale } from "./hooks/useUiScale";
+import { useJobs } from "./hooks/useJobs";
 import { useNativeContextMenuGuard } from "./hooks/useNativeContextMenuGuard";
 import { useUiStore } from "./store/ui";
 
@@ -23,9 +24,13 @@ export default function App() {
   const { canTop, scrollToTop } = useScrollTop(mainRef, view);
   useApplyUiScale();
   useNativeContextMenuGuard();
+  // Called once here (not inside StatusBar) so the `job://update` live subscription is established a
+  // single time for the whole shell; both the window-frame activity signal and the status-bar indicator
+  // read the same result instead of each opening their own event listener.
+  const jobs = useJobs();
 
   return (
-    <div className="window-frame h-full">
+    <div className={`window-frame h-full ${jobs.active ? "is-active" : ""}`}>
       <div className="window-frame-inner hud-grid-bg flex h-full flex-col">
         <TitleBar />
         {/* Shown only when the previous run left a crash report (ADR-APP-032) — the one place a
@@ -40,7 +45,7 @@ export default function App() {
             {view === "settings" ? <SettingsView /> : null}
           </main>
         </div>
-        <StatusBar canScrollTop={canTop} onScrollTop={scrollToTop} />
+        <StatusBar canScrollTop={canTop} onScrollTop={scrollToTop} jobs={jobs} />
       </div>
       {aboutOpen ? <AboutDialog onClose={() => setAboutOpen(false)} /> : null}
     </div>

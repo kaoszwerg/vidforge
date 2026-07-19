@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi } from "vitest";
 import App from "./App";
@@ -31,6 +31,11 @@ vi.mock("./api/commands", () => ({
     probeMedia: vi.fn(),
     getThumbnail: vi.fn(),
     pickFolder: vi.fn().mockResolvedValue(null),
+    // useJobs (App shell: window-frame activity signal + status-bar JobsIndicator) always mounts.
+    listJobs: vi.fn().mockResolvedValue([]),
+    listPresets: vi.fn().mockResolvedValue([]),
+    enqueueJob: vi.fn(),
+    cancelJob: vi.fn(),
   },
 }));
 
@@ -57,6 +62,8 @@ vi.mock("@tauri-apps/api/webview", () => ({
 vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn().mockResolvedValue(() => undefined),
 }));
+
+import { api } from "./api/commands";
 
 function renderApp() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -86,5 +93,28 @@ describe("App shell", () => {
     renderApp();
     expect(screen.getByLabelText("Bibliothek")).toHaveAttribute("aria-current", "page");
     expect(await screen.findByText("Ordner hierher ziehen oder durchsuchen")).toBeInTheDocument();
+  });
+
+  it("does not energize the window frame when the job queue is empty", async () => {
+    const { container } = renderApp();
+    await screen.findAllByText(APP_NAME, { exact: false });
+    expect(container.querySelector(".window-frame")).not.toHaveClass("is-active");
+  });
+
+  it("energizes the window frame while a job is running", async () => {
+    vi.mocked(api.listJobs).mockResolvedValue([
+      {
+        id: "job-1",
+        input_path: "/videos/a.mp4",
+        input_name: "a.mp4",
+        output_path: "/out/a.mp4",
+        preset_id: "universal",
+        state: "Running",
+        percent: 10,
+        error: null,
+      },
+    ]);
+    const { container } = renderApp();
+    await waitFor(() => expect(container.querySelector(".window-frame")).toHaveClass("is-active"));
   });
 });

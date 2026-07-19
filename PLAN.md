@@ -105,11 +105,12 @@ Repair (remux `-c copy` + genpts/index rebuild) · Custom (container, codec, CRF
 - [x] Library view (folder picker + drag-drop, VideoCard grid, quality badge) + Detail view (full
       metadata), loading/empty/error states. (ProgressBar/Slider/Dialog primitives land with jobs/player.)
 
-### Phase 3 — Queue, presets, convert & repair
-- [ ] JobQueue + concurrency + `-progress` percent + cancel + crash-boundary; preset argv builders;
-      `enqueue_job`/`cancel_job`/`list_jobs`. Integration test: convert `testsrc`→MP4/H.264, re-probe;
-      repair remux round-trip.
-- [ ] StatusBar **jobs popover (bottom-right, % bars)** + window-border activity signal wired to job state.
+### Phase 3 — Queue, presets, convert & repair (done)
+- [x] JobQueue (tokio dispatcher + Semaphore concurrency) + `-progress` percent + cancel (kill child +
+      remove partial) + crash-boundary; preset argv builders; `list_presets`/`enqueue_job`/`cancel_job`/
+      `list_jobs`. Real-ffmpeg e2e: AVI → MP4/H.264, source untouched.
+- [x] StatusBar **jobs popover (bottom-right, % bars, running + queued)** + window-border activity signal;
+      Convert/Repair actions on Detail; **bulk multiselect** (click/Ctrl-Cmd/Shift/Ctrl+A/Esc) + convert.
 
 ### Phase 4 — Internal player
 - [ ] `stream` URI scheme + range serving + remux/transcode negotiation; fully-skinned transport
