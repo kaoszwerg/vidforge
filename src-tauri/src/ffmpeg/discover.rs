@@ -47,41 +47,44 @@ pub fn exe_name(tool: &str) -> String {
 }
 
 fn resolve(tool: &str, override_path: Option<&str>, managed_bin_dir: &Path) -> Option<FfmpegTool> {
-    // 1. Explicit override — but a stale/invalid override must not shadow a working discovery.
+    let (path, source) = find_tool(tool, override_path, managed_bin_dir)?;
+    probe_tool(&path, source)
+}
+
+/// Locate a tool's binary and how it was resolved, WITHOUT running `-version`. This is the fast path the
+/// media commands use — they need the path, not the version string, and re-probing `-version` per file
+/// would be wasteful. Order matches [`resolve`]: override -> managed -> PATH -> platform locations.
+pub fn find_tool(
+    tool: &str,
+    override_path: Option<&str>,
+    managed_bin_dir: &Path,
+) -> Option<(PathBuf, &'static str)> {
+    // 1. Explicit override — a stale/invalid override must not shadow a working discovery.
     if let Some(p) = override_path {
         let path = PathBuf::from(p);
         if path.is_file() {
-            if let Some(t) = probe_tool(&path, "override") {
-                return Some(t);
-            }
-        } else {
-            tracing::warn!(
-                tool,
-                path = p,
-                "ffmpeg override path is not a file; ignoring"
-            );
+            return Some((path, "override"));
         }
+        tracing::warn!(
+            tool,
+            path = p,
+            "ffmpeg override path is not a file; ignoring"
+        );
     }
     // 2. App-managed install (written by the in-app installer).
     let managed = managed_bin_dir.join(exe_name(tool));
     if managed.is_file() {
-        if let Some(t) = probe_tool(&managed, "managed") {
-            return Some(t);
-        }
+        return Some((managed, "managed"));
     }
     // 3. On the process PATH.
     if let Some(found) = find_in(&exe_name(tool), std::env::var_os("PATH")) {
-        if let Some(t) = probe_tool(&found, "path") {
-            return Some(t);
-        }
+        return Some((found, "path"));
     }
     // 4. Platform install locations.
     for dir in platform_dirs() {
         let cand = dir.join(exe_name(tool));
         if cand.is_file() {
-            if let Some(t) = probe_tool(&cand, "system") {
-                return Some(t);
-            }
+            return Some((cand, "system"));
         }
     }
     None
@@ -131,9 +134,8 @@ fn platform_dirs() -> Vec<PathBuf> {
 /// Run `<path> -version` and turn a success into a [`FfmpegTool`]. Suppresses the console window that
 /// would otherwise flash on Windows when a GUI process spawns a console child.
 fn probe_tool(path: &Path, source: &str) -> Option<FfmpegTool> {
-    let mut cmd = std::process::Command::new(path);
+    let mut cmd = crate::ffmpeg::command(path);
     cmd.arg("-version");
-    no_window(&mut cmd);
     let out = match cmd.output() {
         Ok(o) => o,
         Err(e) => {
@@ -172,16 +174,6 @@ fn parse_version(output: &str) -> String {
         first.to_string()
     }
 }
-
-#[cfg(windows)]
-fn no_window(cmd: &mut std::process::Command) {
-    use std::os::windows::process::CommandExt;
-    // CREATE_NO_WINDOW — no console flash when the GUI process spawns ffmpeg.
-    cmd.creation_flags(0x0800_0000);
-}
-
-#[cfg(not(windows))]
-fn no_window(_cmd: &mut std::process::Command) {}
 
 #[cfg(test)]
 mod tests {

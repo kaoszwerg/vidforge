@@ -1,4 +1,5 @@
 import { HudPanel } from "../components/ui/HudPanel";
+import { MetaRow } from "../components/ui/MetaRow";
 import { useBuildInfo } from "../hooks/useBuildInfo";
 import { useT } from "../i18n";
 import { APP_DESCRIPTION, APP_NAME } from "../lib/app";
@@ -34,13 +35,13 @@ export function HomeView() {
 
         <HudPanel accent="green" label={t("home.panel.build")}>
           <dl className="text-dim grid grid-cols-2 gap-x-4 gap-y-1.5 font-mono text-xs">
-            <Meta k={t("common.meta.version")} v={build ? `v${build.version}` : "—"} />
-            <Meta k={t("common.meta.channel")} v={build?.channel ?? "—"} />
-            <Meta
+            <MetaRow k={t("common.meta.version")} v={build ? `v${build.version}` : "—"} />
+            <MetaRow k={t("common.meta.channel")} v={build?.channel ?? "—"} />
+            <MetaRow
               k={t("common.meta.commit")}
               v={build ? `${build.git_sha}${build.git_dirty ? "+" : ""}` : "—"}
             />
-            <Meta k={t("common.meta.debug")} v={build ? String(build.debug) : "—"} />
+            <MetaRow k={t("common.meta.debug")} v={build ? String(build.debug) : "—"} />
           </dl>
         </HudPanel>
       </div>
@@ -62,14 +63,5 @@ function Item({ children }: { children: React.ReactNode }) {
       <span className="text-cyan">›</span>
       <span>{children}</span>
     </li>
-  );
-}
-
-function Meta({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="flex justify-between gap-2">
-      <dt>{k}</dt>
-      <dd className="text-fg">{v}</dd>
-    </div>
   );
 }

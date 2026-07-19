@@ -7,6 +7,8 @@ use crate::settings::SettingsPatch;
 use crate::state::AppState;
 use tauri::State;
 
+pub mod media;
+
 /// Record a fatal error from the UI runtime (ADR-CORE-037, ADR-APP-032).
 ///
 /// The webview is a **second entry point**: the Rust panic hook is blind to it, so a crash in the UI

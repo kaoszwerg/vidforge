@@ -8,7 +8,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
-import { hudButtonClass, type HudAccent } from "./hudButton";
+import { hudAccentTextClass, hudButtonClass, type HudAccent } from "./hudButton";
 
 export interface SelectOption<T extends string> {
   value: T;
@@ -27,16 +27,6 @@ export interface SelectProps<T extends string> {
   disabled?: boolean;
   className?: string;
 }
-
-// `Map` rather than a plain-object lookup so highlighting the active option never touches bracket
-// access on a dynamic key (`security/detect-object-injection` — see the same reasoning in i18n/translate.ts).
-const ACCENT_TEXT = new Map<HudAccent, string>([
-  ["cyan", "text-cyan"],
-  ["green", "text-green"],
-  ["gold", "text-gold"],
-  ["purple", "text-purple"],
-  ["danger", "text-danger"],
-]);
 
 /**
  * HUD dropdown select (ADR-APP-026): the replacement for the native `<select>`, whose OS-drawn popup
@@ -194,9 +184,7 @@ export function Select<T extends string>({
                       }
                     }}
                     className={`flex cursor-pointer items-center justify-between gap-2 px-3 py-1.5 ${
-                      i === activeIndex
-                        ? `bg-elevated ${ACCENT_TEXT.get(accent) ?? "text-cyan"}`
-                        : "text-fg"
+                      i === activeIndex ? `bg-elevated ${hudAccentTextClass(accent)}` : "text-fg"
                     }`}
                   >
                     <span className="truncate">{opt.label}</span>

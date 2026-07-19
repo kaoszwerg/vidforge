@@ -15,6 +15,9 @@ export const de = {
   // Shared across more than one view/component.
   "common.close": "Schließen",
   "common.loading": "Lädt…",
+  "common.back": "Zurück",
+  "common.yes": "Ja",
+  "common.no": "Nein",
   "common.meta.version": "version",
   "common.meta.channel": "kanal",
   "common.meta.commit": "commit",
@@ -23,9 +26,50 @@ export const de = {
 
   // Sidebar navigation (also reused as view headings).
   "nav.primaryLandmark": "Hauptnavigation",
+  "nav.library": "Bibliothek",
   "nav.home": "Start",
   "nav.logs": "Protokolle",
   "nav.settings": "Einstellungen",
+
+  // Resolution-based quality tier (QualityBadge, ADR-PROJ-001 §3).
+  "quality.excellent": "Exzellent",
+  "quality.good": "Gut",
+  "quality.fair": "Mittel",
+  "quality.low": "Niedrig",
+  "quality.poor": "Schlecht",
+
+  // LibraryView.
+  "library.dropzone.label": "Ordner hierher ziehen oder durchsuchen",
+  "library.dropzone.browse": "Durchsuchen…",
+  "library.scanning": "Scanne Ordner…",
+  "library.empty": "Keine Videos in diesem Ordner gefunden.",
+  "library.scanError.title": "Scan fehlgeschlagen",
+  "library.ffmpegMissing.title": "ffmpeg nicht gefunden",
+  "library.ffmpegMissing.body":
+    "Vidforge benötigt ffmpeg und ffprobe, um Videos zu scannen und abzuspielen. Installiere beide und starte die App neu, oder hinterlege den Pfad in den Einstellungen. Ein In-App-Installer folgt in einem späteren Schritt.",
+  "library.card.probeError": "Metadaten konnten nicht gelesen werden: {message}",
+
+  // DetailView.
+  "detail.error.title": "Metadaten-Fehler",
+  "detail.panel.file": "Datei",
+  "detail.panel.video": "Video",
+  "detail.panel.audio": "Audio",
+  "detail.panel.subtitles": "Untertitel",
+  "detail.panel.player": "Player",
+  "detail.container": "container",
+  "detail.duration": "dauer",
+  "detail.size": "größe",
+  "detail.bitrate": "bitrate",
+  "detail.resolution": "auflösung",
+  "detail.codec": "codec",
+  "detail.fps": "bildrate",
+  "detail.pixfmt": "pixelformat",
+  "detail.hdr": "hdr",
+  "detail.channels": "kanäle",
+  "detail.sampleRate": "abtastrate",
+  "detail.language": "sprache",
+  "detail.language.unknown": "unbekannt",
+  "detail.player.comingSoon": "Player und Konvertierungs-Aktionen folgen demnächst.",
 
   // HomeView.
   "home.panel.shell": "Shell",
@@ -117,6 +161,9 @@ export type Language = (typeof LANGUAGES)[number];
 export const en: Record<MessageKey, string> = {
   "common.close": "Close",
   "common.loading": "Loading…",
+  "common.back": "Back",
+  "common.yes": "Yes",
+  "common.no": "No",
   "common.meta.version": "version",
   "common.meta.channel": "channel",
   "common.meta.commit": "commit",
@@ -124,9 +171,47 @@ export const en: Record<MessageKey, string> = {
   "common.meta.debug": "debug",
 
   "nav.primaryLandmark": "Primary",
+  "nav.library": "Library",
   "nav.home": "Home",
   "nav.logs": "Logs",
   "nav.settings": "Settings",
+
+  "quality.excellent": "Excellent",
+  "quality.good": "Good",
+  "quality.fair": "Fair",
+  "quality.low": "Low",
+  "quality.poor": "Poor",
+
+  "library.dropzone.label": "Drop a folder here or browse to select one",
+  "library.dropzone.browse": "Browse…",
+  "library.scanning": "Scanning folder…",
+  "library.empty": "No videos found in this folder.",
+  "library.scanError.title": "Scan failed",
+  "library.ffmpegMissing.title": "ffmpeg not found",
+  "library.ffmpegMissing.body":
+    "Vidforge needs ffmpeg and ffprobe to scan and play videos. Install both and restart the app, or set the path in Settings. An in-app installer is coming in a later step.",
+  "library.card.probeError": "Could not read metadata: {message}",
+
+  "detail.error.title": "Metadata error",
+  "detail.panel.file": "File",
+  "detail.panel.video": "Video",
+  "detail.panel.audio": "Audio",
+  "detail.panel.subtitles": "Subtitles",
+  "detail.panel.player": "Player",
+  "detail.container": "container",
+  "detail.duration": "duration",
+  "detail.size": "size",
+  "detail.bitrate": "bitrate",
+  "detail.resolution": "resolution",
+  "detail.codec": "codec",
+  "detail.fps": "fps",
+  "detail.pixfmt": "pixel format",
+  "detail.hdr": "hdr",
+  "detail.channels": "channels",
+  "detail.sampleRate": "sample rate",
+  "detail.language": "language",
+  "detail.language.unknown": "unknown",
+  "detail.player.comingSoon": "Player and convert actions are coming soon.",
 
   "home.panel.shell": "Shell",
   "home.panel.build": "Build",

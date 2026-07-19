@@ -29,17 +29,22 @@ describe("Sidebar", () => {
     vi.mocked(api.getSettings).mockResolvedValue(settingsDto());
   });
 
-  it("exposes the primary navigation landmark with Home, Logs and Settings", () => {
+  it("exposes the primary navigation landmark with Library, Home, Logs and Settings", () => {
     renderSidebar();
     expect(screen.getByRole("navigation", { name: "Hauptnavigation" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bibliothek" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Protokolle" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Einstellungen" })).toBeInTheDocument();
   });
 
-  it("marks the active view as the current page", () => {
+  it("marks the active view as the current page (Library by default)", () => {
+    useUiStore.setState({ view: "library", aboutOpen: false });
     renderSidebar();
-    expect(screen.getByRole("button", { name: "Start" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("button", { name: "Bibliothek" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(screen.getByRole("button", { name: "Protokolle" })).not.toHaveAttribute("aria-current");
   });
 
@@ -56,6 +61,13 @@ describe("Sidebar", () => {
     fireEvent.click(screen.getByRole("button", { name: "Einstellungen" }));
     expect(useUiStore.getState().view).toBe("settings");
     expect(screen.getByRole("button", { name: "Einstellungen" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Bibliothek" }));
+    expect(useUiStore.getState().view).toBe("library");
+    expect(screen.getByRole("button", { name: "Bibliothek" })).toHaveAttribute(
       "aria-current",
       "page",
     );

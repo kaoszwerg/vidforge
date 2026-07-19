@@ -16,6 +16,19 @@ pub enum AppError {
     #[error("json parse error: {0}")]
     Json(#[from] serde_json::Error),
 
+    /// The ffmpeg suite (ffmpeg/ffprobe) is not available — the caller should offer the installer
+    /// (ADR-PROJ-001, ADR-CORE-037). Not a bug: a first-class "you need ffmpeg" state.
+    #[error("ffmpeg tools are not available — install or configure ffmpeg first")]
+    FfmpegNotReady,
+
+    /// `ffprobe` could not read a file's metadata.
+    #[error("could not read media info for {path}: {reason}")]
+    ProbeFailed { path: String, reason: String },
+
+    /// A thumbnail could not be generated for a file.
+    #[error("could not generate a thumbnail for {path}: {reason}")]
+    ThumbnailFailed { path: String, reason: String },
+
     /// Catch-all for other recoverable failures, carrying a human-readable message.
     #[error("{0}")]
     Other(String),

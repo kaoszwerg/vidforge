@@ -92,17 +92,18 @@ Repair (remux `-c copy` + genpts/index rebuild) · Custom (container, codec, CRF
 - [x] Slugline "Every format, reforged." wired. `check:all` green.
 - [x] ADR-PROJ-001 + rule:media-pipeline (this commit).
 
-### Phase 1 — Settings, i18n, deps, errors, ffmpeg discovery + installer
-- [ ] Deps: `tokio` `process`/`io-util`, `tauri-plugin-dialog` 2.7.2, `sha2`; npm `@tauri-apps/plugin-dialog`
-      (ui-boundary viewSafe). `SettingsDto` + fields; `AppError` variants; contracts + bindings.
-- [ ] `src/i18n/` (de/en, `t()`, language from settings, de default) + tests.
-- [ ] ffmpeg discovery + version probe + installer (download/verify/extract) + commands + unit tests.
+### Phase 1 — Settings, i18n, discovery (done) + installer
+- [x] Settings expansion (language, ffmpeg/ffprobe paths, output dir, concurrency, recursion) + `AppError`
+      variants + bindings + contract tests.
+- [x] `src/i18n/` (de/en, `useT()`, language from settings, German default) + `Select` HUD primitive.
+- [x] ffmpeg/ffprobe discovery (override → managed → PATH → platform) + version probe + `discover_ffmpeg`.
+- [ ] In-app ffmpeg installer (pinned URL, sha2 verify, tar extract) + command + UI.
 
-### Phase 2 — Scan, metadata, quality, thumbnails, Library + Detail views
-- [ ] `scan_folder`/`probe_media`/`get_thumbnail`/quality + DTOs + tests (probe-JSON fixture, `testsrc`
-      integration test). Primitives: ProgressBar, Badge, Slider, Select, Dialog, Dropzone (+ tests).
-- [ ] Library view (folder picker via dialog + drag-drop, grid of VideoCards, quality pill), Detail view
-      (full metadata + player mount + actions), loading/empty/error states.
+### Phase 2 — Scan, metadata, quality, thumbnails, Library + Detail (done)
+- [x] `scan_folder`/`probe_media`/`get_thumbnail` + quality tier + DTOs + tests (probe-JSON fixtures +
+      a real-ffmpeg `testsrc` e2e). Primitives: `Badge`, `Dropzone`, `MetaRow`, `QualityBadge`, `VideoCard`.
+- [x] Library view (folder picker + drag-drop, VideoCard grid, quality badge) + Detail view (full
+      metadata), loading/empty/error states. (ProgressBar/Slider/Dialog primitives land with jobs/player.)
 
 ### Phase 3 — Queue, presets, convert & repair
 - [ ] JobQueue + concurrency + `-progress` percent + cancel + crash-boundary; preset argv builders;

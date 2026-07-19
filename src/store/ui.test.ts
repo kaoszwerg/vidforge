@@ -25,7 +25,7 @@ describe("useUiStore", () => {
     expect(useUiStore.getState().aboutOpen).toBe(false);
   });
 
-  it("onRehydrateStorage resets an invalid persisted view to home", async () => {
+  it("onRehydrateStorage resets an invalid persisted view to library", async () => {
     window.localStorage.setItem(
       "app-ui",
       JSON.stringify({ state: { view: "not-a-real-view" }, version: 1 }),
@@ -33,7 +33,7 @@ describe("useUiStore", () => {
 
     await useUiStore.persist.rehydrate();
 
-    expect(useUiStore.getState().view).toBe("home");
+    expect(useUiStore.getState().view).toBe("library");
   });
 
   it("onRehydrateStorage keeps a valid persisted view", async () => {

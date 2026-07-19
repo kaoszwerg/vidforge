@@ -102,6 +102,91 @@ pub struct FfmpegStatus {
     pub ready: bool,
 }
 
+/// A video file found by scanning a folder — the lightweight card entry, before it is probed.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct ScannedFile {
+    /// Absolute path to the file.
+    pub path: String,
+    /// File name with extension (display label).
+    pub name: String,
+    /// Lower-case extension without the dot (e.g. `"mp4"`).
+    pub extension: String,
+    /// Size in bytes. `f64` (not `u64`) so the TS side gets a plain number, not a `bigint`; video files
+    /// are far below the 2^53 exact-integer ceiling.
+    pub size_bytes: f64,
+}
+
+/// Resolution-based quality tier (ADR-PROJ-001 §3). Green at >=1080p, ramping to red below. The frontend
+/// maps each tier to a HUD colour token and a localized label.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub enum QualityTier {
+    /// >= 1440p (incl. 4K).
+    Excellent,
+    /// >= 1080p.
+    Good,
+    /// >= 720p.
+    Fair,
+    /// >= 480p.
+    Low,
+    /// < 480p, or no video stream.
+    Poor,
+}
+
+/// One video stream from `ffprobe`.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct VideoStreamInfo {
+    pub codec: String,
+    pub width: u32,
+    pub height: u32,
+    /// Frames per second (may be fractional, e.g. 29.97).
+    pub fps: f64,
+    pub pix_fmt: Option<String>,
+    pub bit_rate: Option<f64>,
+    /// True when the colour metadata indicates HDR (BT.2020 / PQ / HLG).
+    pub hdr: bool,
+}
+
+/// One audio stream from `ffprobe`.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct AudioStreamInfo {
+    pub codec: String,
+    pub channels: u32,
+    pub sample_rate: u32,
+    pub bit_rate: Option<f64>,
+    pub language: Option<String>,
+}
+
+/// One subtitle stream from `ffprobe`.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct SubtitleStreamInfo {
+    pub codec: String,
+    pub language: Option<String>,
+}
+
+/// Full technical metadata for one video, parsed from `ffprobe -show_format -show_streams` (ADR-PROJ-001).
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct MediaInfo {
+    pub path: String,
+    /// Container/format long name (e.g. `"QuickTime / MOV"`), from `format.format_long_name`.
+    pub container: String,
+    pub duration_secs: Option<f64>,
+    pub size_bytes: f64,
+    /// Overall bit rate in bits/sec.
+    pub bit_rate: Option<f64>,
+    /// The first video stream, if any.
+    pub video: Option<VideoStreamInfo>,
+    pub audio: Vec<AudioStreamInfo>,
+    pub subtitles: Vec<SubtitleStreamInfo>,
+    /// Resolution-based quality tier (derived from the video height).
+    pub quality: QualityTier,
+}
+
 fn default_ui_scale() -> f64 {
     1.0
 }

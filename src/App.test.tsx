@@ -19,6 +19,18 @@ vi.mock("./api/commands", () => ({
     updateSettings: vi.fn(),
     getRecentLogs: vi.fn().mockResolvedValue([]),
     openExternal: vi.fn(),
+    // LibraryView (the default view, ADR-PROJ-001) checks ffmpeg availability before rendering
+    // anything else — resolved "ready" so the shell-smoke test exercises the normal Dropzone path
+    // rather than the ffmpeg-missing notice.
+    discoverFfmpeg: vi.fn().mockResolvedValue({
+      ffmpeg: { path: "/usr/bin/ffmpeg", version: "6.1.1", source: "path" },
+      ffprobe: { path: "/usr/bin/ffprobe", version: "6.1.1", source: "path" },
+      ready: true,
+    }),
+    scanFolder: vi.fn().mockResolvedValue([]),
+    probeMedia: vi.fn(),
+    getThumbnail: vi.fn(),
+    pickFolder: vi.fn().mockResolvedValue(null),
   },
 }));
 
@@ -35,7 +47,11 @@ vi.mock("@tauri-apps/api/window", () => ({
 }));
 
 vi.mock("@tauri-apps/api/webview", () => ({
-  getCurrentWebview: () => ({ setZoom: vi.fn().mockResolvedValue(undefined) }),
+  getCurrentWebview: () => ({
+    setZoom: vi.fn().mockResolvedValue(undefined),
+    // LibraryView's Dropzone (the default view) subscribes to this on mount.
+    onDragDropEvent: vi.fn().mockResolvedValue(() => undefined),
+  }),
 }));
 
 vi.mock("@tauri-apps/api/event", () => ({
@@ -60,8 +76,15 @@ describe("App shell", () => {
   it("shows the primary navigation rail", () => {
     renderApp();
     expect(screen.getByLabelText("Hauptnavigation")).toBeInTheDocument();
+    expect(screen.getByLabelText("Bibliothek")).toBeInTheDocument();
     expect(screen.getByLabelText("Start")).toBeInTheDocument();
     expect(screen.getByLabelText("Protokolle")).toBeInTheDocument();
     expect(screen.getByLabelText("Einstellungen")).toBeInTheDocument();
+  });
+
+  it("opens on the Library view by default (ADR-PROJ-001)", async () => {
+    renderApp();
+    expect(screen.getByLabelText("Bibliothek")).toHaveAttribute("aria-current", "page");
+    expect(await screen.findByText("Ordner hierher ziehen oder durchsuchen")).toBeInTheDocument();
   });
 });

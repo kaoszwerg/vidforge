@@ -4,6 +4,7 @@ import { StatusBar } from "./components/layout/StatusBar";
 import { Sidebar } from "./components/sidebar/Sidebar";
 import { AboutDialog } from "./components/AboutDialog";
 import { CrashNotice } from "./components/CrashNotice";
+import { LibraryView } from "./views/LibraryView";
 import { HomeView } from "./views/HomeView";
 import { LogsView } from "./views/LogsView";
 import { SettingsView } from "./views/SettingsView";
@@ -33,6 +34,7 @@ export default function App() {
         <div className="flex flex-1 overflow-hidden">
           <Sidebar />
           <main ref={mainRef} className="flex-1 overflow-hidden">
+            {view === "library" ? <LibraryView /> : null}
             {view === "home" ? <HomeView /> : null}
             {view === "logs" ? <LogsView /> : null}
             {view === "settings" ? <SettingsView /> : null}

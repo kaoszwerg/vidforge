@@ -2,10 +2,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-/** Top-level views (sidebar navigation). Product views are added here as they land. */
-export type ViewId = "home" | "logs" | "settings";
+/** Top-level views (sidebar navigation). Product views are added here as they land. `library` is the
+ * primary/first view (ADR-PROJ-001) — the Detail view lives inside it (`store/library.ts`), not as its
+ * own entry. */
+export type ViewId = "library" | "home" | "logs" | "settings";
 
-const VIEWS: ViewId[] = ["home", "logs", "settings"];
+const VIEWS: ViewId[] = ["library", "home", "logs", "settings"];
 
 export interface UiState {
   view: ViewId;
@@ -20,7 +22,7 @@ export interface UiState {
 export const useUiStore = create<UiState>()(
   persist(
     (set) => ({
-      view: "home",
+      view: "library",
       aboutOpen: false,
 
       setView: (view) => set({ view }),
@@ -36,7 +38,7 @@ export const useUiStore = create<UiState>()(
       partialize: (s) => ({ view: s.view }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-        if (!VIEWS.includes(state.view)) state.view = "home";
+        if (!VIEWS.includes(state.view)) state.view = "library";
       },
     },
   ),

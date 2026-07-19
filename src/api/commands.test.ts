@@ -1,12 +1,18 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 import { api } from "./commands";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
 }));
 
+vi.mock("@tauri-apps/plugin-dialog", () => ({
+  open: vi.fn(),
+}));
+
 const mockInvoke = invoke as unknown as Mock;
+const mockOpen = open as unknown as Mock;
 
 describe("api", () => {
   beforeEach(() => {
@@ -128,5 +134,50 @@ describe("api", () => {
     mockInvoke.mockResolvedValue(status);
     await expect(api.discoverFfmpeg()).resolves.toEqual(status);
     expect(mockInvoke).toHaveBeenCalledWith("discover_ffmpeg");
+  });
+
+  describe("scanFolder", () => {
+    it("calls scan_folder with the path and a null recursive when omitted", async () => {
+      const files = [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 100 }];
+      mockInvoke.mockResolvedValue(files);
+      await expect(api.scanFolder("/videos")).resolves.toEqual(files);
+      expect(mockInvoke).toHaveBeenCalledWith("scan_folder", { path: "/videos", recursive: null });
+    });
+
+    it("forwards an explicit recursive override", async () => {
+      mockInvoke.mockResolvedValue([]);
+      await api.scanFolder("/videos", true);
+      expect(mockInvoke).toHaveBeenCalledWith("scan_folder", { path: "/videos", recursive: true });
+    });
+  });
+
+  it("probeMedia calls probe_media with the path", async () => {
+    const info = { path: "/videos/a.mp4", container: "MP4", duration_secs: 12.5, size_bytes: 100 };
+    mockInvoke.mockResolvedValue(info);
+    await expect(api.probeMedia("/videos/a.mp4")).resolves.toEqual(info);
+    expect(mockInvoke).toHaveBeenCalledWith("probe_media", { path: "/videos/a.mp4" });
+  });
+
+  it("getThumbnail calls get_thumbnail with the path", async () => {
+    mockInvoke.mockResolvedValue("data:image/jpeg;base64,abc");
+    await expect(api.getThumbnail("/videos/a.mp4")).resolves.toBe("data:image/jpeg;base64,abc");
+    expect(mockInvoke).toHaveBeenCalledWith("get_thumbnail", { path: "/videos/a.mp4" });
+  });
+
+  describe("pickFolder", () => {
+    beforeEach(() => {
+      mockOpen.mockReset();
+    });
+
+    it("opens a directory-only dialog and resolves to the chosen path", async () => {
+      mockOpen.mockResolvedValue("/home/user/videos");
+      await expect(api.pickFolder()).resolves.toBe("/home/user/videos");
+      expect(mockOpen).toHaveBeenCalledWith({ directory: true });
+    });
+
+    it("resolves to null when the user cancels", async () => {
+      mockOpen.mockResolvedValue(null);
+      await expect(api.pickFolder()).resolves.toBeNull();
+    });
   });
 });

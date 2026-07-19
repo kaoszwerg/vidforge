@@ -29,3 +29,20 @@ export function hudButtonClass({
   }
   return `hud-clip-sm hud-btn hud-accent-${accent}${active ? " hud-btn-active" : ""}`;
 }
+
+// `Map` rather than plain-object bracket access: the accent is chosen at runtime, and `obj[accent]`
+// is exactly the dynamic-key indexing `security/detect-object-injection` flags (see the same
+// reasoning in i18n/translate.ts).
+const ACCENT_TEXT = new Map<HudAccent, string>([
+  ["cyan", "text-cyan"],
+  ["green", "text-green"],
+  ["gold", "text-gold"],
+  ["purple", "text-purple"],
+  ["danger", "text-danger"],
+]);
+
+/** Tailwind text-colour class for a HUD accent (ADR-APP-020) — the single source so `Select`, `Badge`
+ * and any future accent-coloured label agree on which token means "gold" (ADR-CORE-005). */
+export function hudAccentTextClass(accent: HudAccent): string {
+  return ACCENT_TEXT.get(accent) ?? "text-cyan";
+}
