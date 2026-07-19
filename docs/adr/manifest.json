@@ -1,6 +1,6 @@
 {
   "generated": true,
-  "count": 28,
+  "count": 29,
   "adrs": [
     {
       "id": "ADR-APP-001",
@@ -780,6 +780,53 @@
       "supersededBy": null,
       "path": "docs/adr/core-038-layered-briefing-names.md",
       "hash": "a8a74474ae5d25e8"
+    },
+    {
+      "id": "ADR-PROJ-001",
+      "layer": "proj",
+      "title": "Video domain architecture — ffmpeg-backed pipeline, internal player, non-destructive output, i18n",
+      "tldr": "ffmpeg/ffprobe run as external processes (discovered or in-app installed); job queue, internal <video> player, strictly non-destructive output, de/en UI.",
+      "scope": "project",
+      "load": "conditional",
+      "status": "accepted",
+      "triggers": [
+        "video",
+        "media",
+        "ffmpeg",
+        "ffprobe",
+        "convert",
+        "encode",
+        "transcode",
+        "remux",
+        "repair",
+        "thumbnail",
+        "probe",
+        "scan",
+        "quality",
+        "player",
+        "stream",
+        "queue",
+        "job",
+        "preset",
+        "install",
+        "download",
+        "egress",
+        "i18n",
+        "language",
+        "locale"
+      ],
+      "applies-to": [
+        "src-tauri/src/ffmpeg/**",
+        "src-tauri/src/media/**",
+        "src-tauri/src/jobs/**",
+        "src-tauri/src/player/**",
+        "src-tauri/src/commands/**",
+        "src/views/**",
+        "src/i18n/**"
+      ],
+      "supersededBy": null,
+      "path": "docs/adr/project/proj-001-video-domain-architecture.md",
+      "hash": "9c2cfac217810db7"
     }
   ]
 }

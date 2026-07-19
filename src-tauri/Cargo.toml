@@ -1,20 +1,20 @@
 [package]
-name = "saga_rust_template"
-version = "0.8.0"
-description = "Cross-platform desktop application shell (Tauri 2 + React) with HUD design system, structured logging and governance."
+name = "vidforge"
+version = "0.1.0"
+description = "Point Vidforge at a folder and it lists every video as a card with a thumbnail and full technical metadata — resolution, container, video and audio codecs, bitrate, frame rate and more. Repair defective files and re-encode or convert between MP4, MKV and AVI, with a one-click visually-lossless MP4/H.264 default and fully configurable presets. Conversions run as non-blocking background jobs in a queue with live per-job progress, driven by a system-installed ffmpeg that Vidforge detects automatically."
 authors = ["kaoszwerg"]
 edition = "2021"
 publish = false
 # The app binary carries the product name so the dev dock/process shows it (ADR-024).
-default-run = "saga-rust-template"
+default-run = "vidforge"
 
 [lib]
 # `_lib` suffix keeps the lib name distinct from the bin on Windows (rust-lang/cargo#8519).
-name = "saga_rust_template_lib"
+name = "vidforge_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [[bin]]
-name = "saga-rust-template"
+name = "vidforge"
 path = "src/main.rs"
 
 # Versions pinned to the stable releases used by the shell and verified against crates.io (ADR-009).

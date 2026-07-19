@@ -12,8 +12,8 @@ fn main() {
         .nth(1)
         .expect("usage: crash_probe <data-dir>");
 
-    saga_rust_template_lib::crash::set_data_dir(std::path::Path::new(&dir));
-    saga_rust_template_lib::crash::install_panic_hook();
+    vidforge_lib::crash::set_data_dir(std::path::Path::new(&dir));
+    vidforge_lib::crash::install_panic_hook();
 
     panic!("probe panic — the failure the hook must report");
 }

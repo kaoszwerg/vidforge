@@ -1,5 +1,5 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "saga-rust-template Dev",
-  "identifier": "com.kaoszwerg.sagarusttemplate.dev"
+  "productName": "Vidforge Dev",
+  "identifier": "com.kaoszwerg.vidforge.dev"
 }

@@ -1,9 +1,9 @@
 {
-  "name": "saga-rust-template",
-  "version": "0.8.0",
+  "name": "vidforge",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Cross-platform desktop application shell (Tauri 2 + React) with HUD design system, structured logging and governance.",
+  "description": "Point Vidforge at a folder and it lists every video as a card with a thumbnail and full technical metadata — resolution, container, video and audio codecs, bitrate, frame rate and more. Repair defective files and re-encode or convert between MP4, MKV and AVI, with a one-click visually-lossless MP4/H.264 default and fully configurable presets. Conversions run as non-blocking background jobs in a queue with live per-job progress, driven by a system-installed ffmpeg that Vidforge detects automatically.",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=20.19"

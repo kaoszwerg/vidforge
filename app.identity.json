@@ -1,11 +1,11 @@
 {
   "$comment": "SINGLE SOURCE OF TRUTH for the app identity (ADR-APP-031). Edit ONLY here, then run `npm run identity:sync`. Never hand-edit the derived name/identifier in package.json, Cargo.toml, tauri.conf.json, tauri.dev.conf.json, src/lib/app.ts or index.html — `identity:check` (in check:all) fails on drift.",
-  "displayName": "saga-rust-template",
-  "binaryName": "saga-rust-template",
-  "packageName": "saga-rust-template",
-  "crateName": "saga_rust_template",
-  "identifier": "com.kaoszwerg.sagarusttemplate",
+  "displayName": "Vidforge",
+  "binaryName": "vidforge",
+  "packageName": "vidforge",
+  "crateName": "vidforge",
+  "identifier": "com.kaoszwerg.vidforge",
   "vendor": "kaoszwerg",
-  "tagline": "Application shell",
-  "description": "Cross-platform desktop application shell (Tauri 2 + React) with HUD design system, structured logging and governance."
+  "tagline": "Every format, reforged.",
+  "description": "Point Vidforge at a folder and it lists every video as a card with a thumbnail and full technical metadata — resolution, container, video and audio codecs, bitrate, frame rate and more. Repair defective files and re-encode or convert between MP4, MKV and AVI, with a one-click visually-lossless MP4/H.264 default and fully configurable presets. Conversions run as non-blocking background jobs in a queue with live per-job progress, driven by a system-installed ffmpeg that Vidforge detects automatically."
 }

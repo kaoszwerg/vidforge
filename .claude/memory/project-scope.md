@@ -1,64 +1,64 @@
 ---
 id: mem:project-scope
-title: saga-rust-template scope summary
-tldr: "A governed, reusable Tauri 2 + React HUD desktop shell. It owns the 'app' layer, consumes the agnostic core from althing, and publishes both to its forks."
+title: Vidforge scope summary
+tldr: "Folder-scoped video repair/convert tool (Tauri 2 + React HUD) on a system ffmpeg with a job queue. Leaf; consumes core+app, owns no layer."
 scope: project
 load: core
 type: project
 ---
 
-# saga-rust-template — scope summary
+# Vidforge — scope summary
 
-**One-line:** `saga-rust-template` is a reusable, cross-platform (Windows/macOS/Linux) desktop
-application shell — HUD UI, structured logging, settings persistence, single-source app identity, full
-quality gate — with **no product features**. New projects are created from it and renamed.
+**One-line:** Vidforge is a cross-platform (Windows/macOS/Linux) desktop tool that is pointed at a folder,
+lists every video inside it as a card (thumbnail + full technical metadata), and **repairs, re-encodes and
+converts** those videos between MP4, MKV and AVI — driven by a **system-installed ffmpeg** it discovers on
+its own, with all work running as non-blocking jobs in a queue that reports live per-job progress.
+
+Built on the `saga-rust-template` shell (the HUD window, logging, settings, identity, quality gate); the
+video functionality is the product layered on top of it.
 
 ## Its place in the governance cascade (ADR-CORE-033)
 
 ```
-althing  (owns 'core' — stack-agnostic)
-   └── saga-rust-template  (consumes 'core', OWNS + publishes 'app')   ← this repo
-          └── ivaldi       (leaf project; owns no layer)
+kaoszwerg/althing            owns 'core'  (stack-agnostic)
+   └── kaoszwerg/saga-rust-template   owns 'app'  (the Tauri/React/HUD shell)
+          └── kaoszwerg/reenc (Vidforge)   ← this repo — LEAF, owns no layer
 ```
 
-This repo is a **consumer and a publisher at the same time**:
+This repo is a **consumer only** (a leaf):
 
-- It **consumes** the agnostic core (`CLAUDE.md`, the portable rules/ADRs, the governance scripts). Those
-  files are **read-only here** — an in-place edit is drift. Improve them in `althing`, then
-  `npm run governance:update`.
-- It **owns** the **`app` layer**: the Tauri/Rust/React/HUD governance (ADR-APP-001, 020, 021, 023, 025, 026,
-  031; `rust-conventions`, `theming`, `ui-design`, `frontend-architecture`, `cross-platform`,
-  `stack-tauri`, `stack-release`), `sync-version.mjs`, `sync-identity.mjs`, `bootstrap.mjs`,
-  `eslint.config.mjs`, `knip.config.js`, `deny.toml`, the CI/release workflows. It pins them with
-  `governance:sync` and publishes them to its forks.
-- **`ivaldi` must never be repointed at `althing`.** Its upstream is this repo — the only publisher of
-  the app layer. Pointing it at the core would strip the entire desktop shell out of it.
+- It **consumes** the agnostic `core` (from `althing`) and the `app` layer (from `saga-rust-template`).
+  Every file either layer owns is **read-only here** — an in-place edit is drift. Improve it upstream and
+  `npm run governance:update`, or diverge the legal way (rule:upstream-changes).
+- It **owns no published layer.** `governance/config.json` records `upstream: kaoszwerg/saga-rust-template`
+  and no `layer`/`owns`. `governance:sync` re-pins nothing here; it only regenerates the local indexes.
+- **Governance for Vidforge goes in the project line** — `.claude/rules/project/`, `docs/adr/project/`
+  (`ADR-PROJ-NNN`), `scripts/project/` — never in a core/app file (the drift-gate blocks it).
 
-## What exists today
+## External runtime dependency: ffmpeg
 
-- Frameless HUD window (custom title bar, sidebar rail, status bar, About dialog); an **optional**
-  system tray + close-to-tray behind the `minimize_to_tray` setting (default off); persisted geometry.
-- Typed IPC surface (`app_version`, `build_info`, `get_recent_logs`, `get_settings`, `update_settings`,
-  `open_external`) with `ts-rs`-generated TypeScript bindings.
-- Logging per ADR-APP-025: console + rotating JSON file + in-memory ring buffer streamed live into the Logs
-  view.
-- Settings persisted as an atomically written JSON document under the OS app-data dir.
-- **Single-source app identity** (`app.identity.json` → `identity:sync`, ADR-APP-031).
+Vidforge shells out to a **system-installed `ffmpeg`/`ffprobe`** — it is **not** bundled (that would carry
+GPL/LGPL redistribution obligations and needs its own ADR before it happens). The backend discovers the
+binaries on `PATH` and in the platform's usual install locations, and a manual override path lives in
+settings. Every conversion/repair/metadata read is a child process; nothing decodes video in-process.
 
-## What it is not (yet)
+## What exists today (inherited from the shell)
 
-- No domain logic, no network calls, no database. A project's purpose is defined on top of this shell.
+- Frameless HUD window, sidebar rail, status bar, About dialog; persisted geometry; optional tray.
+- Typed IPC surface with `ts-rs`-generated bindings; `tracing` logging (console + rotating JSON + live UI
+  buffer); atomically-persisted JSON settings; crash boundaries on both runtimes (ADR-APP-032).
+- Single-source app identity (`app.identity.json` → `identity:sync`, ADR-APP-031).
 
-## Renaming a new project (ADR-APP-031)
+## What is being built (see `PLAN.md`)
 
-Edit `app.identity.json`, then run `node scripts/bootstrap.mjs --upstream <owner/repo>` +
-`npm run identity:sync` (the `/bootstrap` agent prompt does this, plus icons). Everything else is
-derived; `identity:check` guards drift.
+Folder scan + video discovery, `ffprobe` metadata + thumbnail cards, a job queue with live progress, and
+repair/convert commands with presets (default: visually-lossless MP4/H.264). The architecture is recorded
+in `docs/adr/project/` as it lands.
 
-**Why:** the shell is deliberately domain-free, so a new product is defined on top of a running, governed
-base — and scope drift into half-features stays visible immediately.
+**Why:** Vidforge is a product now, not the template it was forked from — stating that here (and its leaf
+position) stops a later agent from editing upstream core/app files, re-deriving the cascade, or drifting
+scope beyond video repair/convert.
 
-**How to apply:** before adding anything to a fresh copy, check it against this file: if it is not shell
-infrastructure and not part of an agreed feature, it does not belong yet. Governance for **this** project
-goes in the project line (`.claude/rules/project/`, `docs/adr/project/`); governance for **every** project
-belongs in `althing`, never here.
+**How to apply:** before adding anything, check it against this file and `PLAN.md`. Video repair/convert
+functionality and its supporting infrastructure belong here; anything that is really a *shell* improvement
+(window chrome, logging, the design system) belongs upstream in `saga-rust-template`, not in this project.

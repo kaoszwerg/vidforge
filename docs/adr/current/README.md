@@ -2,7 +2,7 @@
 
 # Current ADRs (accepted snapshot)
 
-27 accepted decisions. Superseded/deprecated ADRs are omitted here; see the full index
+28 accepted decisions. Superseded/deprecated ADRs are omitted here; see the full index
 in [../README.md](../README.md).
 
 | ADR | Layer | Title | Load |
@@ -34,3 +34,4 @@ in [../README.md](../README.md).
 | [ADR-CORE-036](../core-036-challenge-the-premise.md) | core | Challenge the premise — the agent is a critical partner, not an executor | conditional |
 | [ADR-CORE-037](../core-037-no-silent-death.md) | core | No silent death — every entry point has a last-resort handler | conditional |
 | [ADR-CORE-038](../core-038-layered-briefing-names.md) | core | The layer is part of the briefing filename — <layer>-NNN-<slug>.md, not a number range | conditional |
+| [ADR-PROJ-001](../project/proj-001-video-domain-architecture.md) | proj | Video domain architecture — ffmpeg-backed pipeline, internal player, non-destructive output, i18n | conditional |
