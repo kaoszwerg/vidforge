@@ -315,10 +315,13 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   height: 12px;
   width: 12px;
-  background: var(--saga-neon-green);
+  /* Falls back to green (the original, un-accented look) so any slider that never sets
+     --hud-accent — none did before the Slider primitive — renders exactly as before; a slider wrapped
+     in a `hud-accent-*` class (Slider.tsx) now follows that accent instead (ADR-APP-020). */
+  background: var(--hud-accent, var(--saga-neon-green));
   border: none;
   border-radius: 50%;
-  box-shadow: 0 0 6px rgb(var(--saga-neon-green-rgb) / 0.7);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--hud-accent, var(--saga-neon-green)) 70%, transparent);
   /* Offset relative to the runnable-track top, not the element top — re-centres on the 4px
      track. (4 - 12) / 2 = -4. */
   margin-top: -4px;
@@ -328,22 +331,24 @@ input[type="range"]::-webkit-slider-thumb {
 }
 input[type="range"]:hover::-webkit-slider-thumb {
   transform: scale(1.15);
-  box-shadow: 0 0 12px rgb(var(--saga-neon-green-rgb) / 0.9);
+  box-shadow: 0 0 12px
+    color-mix(in srgb, var(--hud-accent, var(--saga-neon-green)) 90%, transparent);
 }
 input[type="range"]::-moz-range-thumb {
   height: 12px;
   width: 12px;
-  background: var(--saga-neon-green);
+  background: var(--hud-accent, var(--saga-neon-green));
   border: none;
   border-radius: 50%;
-  box-shadow: 0 0 6px rgb(var(--saga-neon-green-rgb) / 0.7);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--hud-accent, var(--saga-neon-green)) 70%, transparent);
   transition:
     box-shadow 0.15s,
     transform 0.15s;
 }
 input[type="range"]:hover::-moz-range-thumb {
   transform: scale(1.15);
-  box-shadow: 0 0 12px rgb(var(--saga-neon-green-rgb) / 0.9);
+  box-shadow: 0 0 12px
+    color-mix(in srgb, var(--hud-accent, var(--saga-neon-green)) 90%, transparent);
 }
 input[type="range"]:disabled::-webkit-slider-thumb,
 input[type="range"]:disabled::-moz-range-thumb {

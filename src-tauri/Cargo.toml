@@ -1,6 +1,6 @@
 [package]
 name = "vidforge"
-version = "0.6.0"
+version = "0.7.0"
 description = "Point Vidforge at a folder and it lists every video as a card with a thumbnail and full technical metadata — resolution, container, video and audio codecs, bitrate, frame rate and more. Repair defective files and re-encode or convert between MP4, MKV and AVI, with a one-click visually-lossless MP4/H.264 default and fully configurable presets. Conversions run as non-blocking background jobs in a queue with live per-job progress, driven by a system-installed ffmpeg that Vidforge detects automatically."
 authors = ["kaoszwerg"]
 edition = "2021"
@@ -24,7 +24,7 @@ path = "src/main.rs"
 tauri-build = { version = "2.6.2", features = [] }
 
 [dependencies]
-tauri = { version = "2.11.2", features = ["tray-icon", "macos-private-api"] }
+tauri = { version = "2.11.2", features = ["tray-icon", "macos-private-api", "protocol-asset"] }
 tauri-plugin-window-state = "2.4.1"
 tauri-plugin-dialog = "2.7.2"
 serde = { version = "1.0.228", features = ["derive"] }

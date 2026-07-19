@@ -11,15 +11,25 @@ use crate::error::{AppError, Result};
 use std::path::PathBuf;
 use tauri::Manager;
 
-/// Where generated thumbnails are cached: `<app_data>/cache/thumbnails` (never beside the source).
-pub fn thumbs_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf> {
+/// The app cache root: `<app_data>/cache` (thumbnails, prepared player sources, …).
+fn cache_root(app: &tauri::AppHandle) -> Result<PathBuf> {
     let dir = app
         .path()
         .app_data_dir()
         .map_err(|e| AppError::Other(format!("resolve app data dir: {e}")))?
-        .join("cache")
-        .join("thumbnails");
+        .join("cache");
     Ok(dir)
+}
+
+/// Where generated thumbnails are cached (never beside the source).
+pub fn thumbs_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf> {
+    Ok(cache_root(app)?.join("thumbnails"))
+}
+
+/// Where prepared (remuxed/transcoded) player sources are cached (ADR-PROJ-001 §5). Served to the webview
+/// via the asset protocol.
+pub fn player_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf> {
+    Ok(cache_root(app)?.join("player"))
 }
 
 /// End-to-end exercise of the media pipeline against the REAL ffmpeg/ffprobe (ADR-CORE-004: prove it, do

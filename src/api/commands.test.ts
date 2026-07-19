@@ -158,6 +158,13 @@ describe("api", () => {
     expect(mockInvoke).toHaveBeenCalledWith("probe_media", { path: "/videos/a.mp4" });
   });
 
+  it("preparePlayer calls prepare_player with the path", async () => {
+    const prepared = { file_path: "/cache/vidforge/abc123.mp4", transcoded: true };
+    mockInvoke.mockResolvedValue(prepared);
+    await expect(api.preparePlayer("/videos/a.mkv")).resolves.toEqual(prepared);
+    expect(mockInvoke).toHaveBeenCalledWith("prepare_player", { path: "/videos/a.mkv" });
+  });
+
   it("getThumbnail calls get_thumbnail with the path", async () => {
     mockInvoke.mockResolvedValue("data:image/jpeg;base64,abc");
     await expect(api.getThumbnail("/videos/a.mp4")).resolves.toBe("data:image/jpeg;base64,abc");

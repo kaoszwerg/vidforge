@@ -40,7 +40,7 @@ Folder ──scan──▶ [paths]     ffmpeg installer (opt-in, pinned+verified
               MediaInfo DTO ───▶ VideoCard ◀── thumbnail (app cache)
                    │  (quality rating: green≥1080p … red = lowest)
                    ▼
-              Detail view ── internal player (stream:// ⇄ ffmpeg remux/transcode) + actions
+              Detail view ── internal player (prepare_player: cache remux/transcode ⇄ convertFileSrc) + actions
                    │
                    ▼   Convert / Repair (PresetSpec)
         JobQueue (tokio, N workers) ── ffmpeg -progress pipe:1 ──▶ % events
@@ -59,8 +59,9 @@ Folder ──scan──▶ [paths]     ffmpeg installer (opt-in, pinned+verified
     `media/thumbnail.rs` — one frame → app cache. `media/quality.rs` — resolution → tier + colour.
   - `jobs/queue.rs` — concurrency-limited queue, `-progress pipe:1` → percent events, cancel (kill child),
     registered in `crash-boundaries.json`. `jobs/preset.rs` — argv builders.
-  - `player/` — session token→path registry + a custom async `stream` URI scheme with range support;
-    remux web-friendly / transcode others on demand.
+  - `player/` — `prepare_player`: probes the source, remuxes (web-friendly H.264/AAC) or transcodes
+    (anything else) into a cached MP4 under the app cache dir; the frontend plays it via `convertFileSrc`
+    (asset protocol, range support built in) — no custom URI scheme needed.
   - `commands/{media,jobs,player,ffmpeg}.rs` — appended to `generate_handler!` in `lib.rs`.
   - `error.rs` — new `AppError` variants; `settings.rs`/`dto.rs` — new fields
     (ffmpeg/ffprobe path, output dir, concurrency, recursive, `language`).
@@ -113,9 +114,11 @@ Repair (remux `-c copy` + genpts/index rebuild) · Custom (container, codec, CRF
 - [x] StatusBar **jobs popover (bottom-right, % bars, running + queued)** + window-border activity signal;
       Convert/Repair actions on Detail; **bulk multiselect** (click/Ctrl-Cmd/Shift/Ctrl+A/Esc) + convert.
 
-### Phase 4 — Internal player
-- [ ] `stream` URI scheme + range serving + remux/transcode negotiation; fully-skinned transport
-      (play/pause/seek/volume/time/fullscreen-in-panel) over `<video>` in the detail view; tests.
+### Phase 4 — Internal player (done)
+- [x] `prepare_player` command: probes the source, remuxes (web-friendly) or transcodes (else) into a
+      cached MP4, served to the webview via `convertFileSrc` (asset protocol — range support built in, no
+      custom URI scheme). `Slider` HUD primitive; `usePreparePlayer`; fully-skinned transport
+      (play/pause/seek/volume/mute/time/fullscreen-in-panel) over `<video>` in the Detail view; tests.
 
 ### Phase 5 — Proof
 - [ ] `gen:types` + `check:all` green; launch the app and **drive** scan → play → convert → 100% → verified

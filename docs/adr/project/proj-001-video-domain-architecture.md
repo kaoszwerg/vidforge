@@ -119,12 +119,15 @@ any sibling tool a feature needs) when the system has none:
 ### 5. Internal player — ffmpeg-fed HTML5 `<video>`, no VLC, no separate window
 
 - The player is an HTML5 `<video>` element embedded in the video **detail view** — 100% HUD-skinned
-  controls, no VLC, no OS window. Video is served to the webview through a **custom asynchronous Tauri URI
-  scheme** (`stream`) with HTTP **range** support, so seeking works.
-- The stream backend negotiates per source: a **web-playable** source (H.264/AAC in a compatible container)
-  is served by remux/`-c copy` or directly; anything else is **transcoded on demand** to H.264/AAC. The
-  handler only ever serves a path validated against the current session's registered playable files
-  (token → path map) — no arbitrary file access via the protocol.
+  controls, no VLC, no OS window.
+- `prepare_player` makes the source playable in the **app cache** first, and the frontend plays that cached
+  file via the built-in **asset protocol** (`convertFileSrc`), which provides HTTP **range** support
+  (seeking) for free — no custom URI scheme is required. A **web-playable** source (H.264 + AAC/MP3) is
+  **remuxed** into MP4 (`-c copy`, near-instant); anything else is **transcoded** to H.264/AAC. The asset
+  protocol is scoped to the app cache dir only (`$APPDATA/cache/**`), so it can never serve an arbitrary
+  file, and the CSP's `media-src` is widened just enough (`asset:` / `http://asset.localhost`) to allow it.
+  (Trade-off: the whole file is remuxed/transcoded before playback starts — a wait for non-web sources;
+  streaming-while-transcoding is a possible future refinement.)
 - Rejected: **VLC/libVLC overlay** (a native child window over a DOM hole) — best any-format seeking without
   transcoding, but platform-specific native code, weak on Linux WebKitGTK, and a heavy extra dependency. The
   internal player reuses ffmpeg, keeps the video truly in the DOM (fully skinnable), and removes the

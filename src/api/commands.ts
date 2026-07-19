@@ -9,6 +9,7 @@ import type { FfmpegStatus } from "../bindings/FfmpegStatus";
 import type { JobDto } from "../bindings/JobDto";
 import type { LogRecord } from "../bindings/LogRecord";
 import type { MediaInfo } from "../bindings/MediaInfo";
+import type { PreparedPlayback } from "../bindings/PreparedPlayback";
 import type { PresetDto } from "../bindings/PresetDto";
 import type { ScannedFile } from "../bindings/ScannedFile";
 import type { SettingsDto } from "../bindings/SettingsDto";
@@ -85,6 +86,14 @@ export const api = {
    * and cached by the backend on first request (ADR-PROJ-001).
    */
   getThumbnail: (path: string) => invoke<string>("get_thumbnail", { path }),
+  /**
+   * Prepare a source video for the internal player (ADR-PROJ-001 §5): probes it and returns a cached,
+   * webview-playable MP4 — remuxed when the source is already web-friendly (H.264/AAC), transcoded
+   * otherwise (can take a while for a large or exotic file). `path` must be one `scanFolder` returned.
+   * The frontend turns the returned `file_path` into a playable URL via `convertFileSrc`
+   * (`usePreparePlayer`); may reject if ffmpeg is unavailable or preparation fails.
+   */
+  preparePlayer: (path: string) => invoke<PreparedPlayback>("prepare_player", { path }),
   /**
    * Open the native OS folder picker and resolve to the chosen absolute path, or `null` if the user
    * cancelled. The one OS-native surface this app keeps (ADR-APP-026 §3, recorded in ADR-PROJ-001): no

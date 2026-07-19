@@ -85,11 +85,23 @@ export const de = {
   "detail.sampleRate": "abtastrate",
   "detail.language": "sprache",
   "detail.language.unknown": "unbekannt",
-  "detail.player.comingSoon": "Player folgt demnächst.",
   "detail.convert": "Konvertieren",
   "detail.repair": "Reparieren",
   "detail.enqueued": "„{name}“ wurde der Warteschlange hinzugefügt.",
   "detail.enqueueError": "Fehler beim Hinzufügen zur Warteschlange: {message}",
+
+  // Internal player (ADR-PROJ-001 §5): HTML5 <video> embedded in the Detail view, HUD transport bar.
+  "player.preparing": "Vorschau wird vorbereitet…",
+  "player.error": "Vorschau konnte nicht vorbereitet werden: {message}",
+  "player.playbackError": "Wiedergabe fehlgeschlagen.",
+  "player.transcodedNote": "Für die Vorschau transkodiert.",
+  "player.play": "Abspielen",
+  "player.pause": "Pause",
+  "player.mute": "Stummschalten",
+  "player.unmute": "Stummschaltung aufheben",
+  "player.seek": "Wiedergabeposition",
+  "player.volume": "Lautstärke",
+  "player.fullscreen": "Vollbild",
 
   // Preset picker (DetailView + LibraryView bulk bar) — labels/descriptions for the built-in
   // conversion/repair presets (ADR-PROJ-001 §4). `src/lib/presets.ts` maps a `PresetDto.id` to these.
@@ -273,11 +285,22 @@ export const en: Record<MessageKey, string> = {
   "detail.sampleRate": "sample rate",
   "detail.language": "language",
   "detail.language.unknown": "unknown",
-  "detail.player.comingSoon": "Player support is coming soon.",
   "detail.convert": "Convert",
   "detail.repair": "Repair",
   "detail.enqueued": 'Added "{name}" to the queue.',
   "detail.enqueueError": "Failed to queue: {message}",
+
+  "player.preparing": "Preparing preview…",
+  "player.error": "Could not prepare preview: {message}",
+  "player.playbackError": "Playback failed.",
+  "player.transcodedNote": "Transcoded for preview.",
+  "player.play": "Play",
+  "player.pause": "Pause",
+  "player.mute": "Mute",
+  "player.unmute": "Unmute",
+  "player.seek": "Playback position",
+  "player.volume": "Volume",
+  "player.fullscreen": "Fullscreen",
 
   "preset.selectLabel": "Preset",
   "preset.universal": "Universal",

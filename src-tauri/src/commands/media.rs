@@ -2,7 +2,7 @@
 //! file. Thin — resolve the tool, do the work, map the error. Each command acts only on a path the user
 //! chose (a folder they picked, or a file that folder's scan produced).
 
-use crate::dto::{MediaInfo, ScannedFile};
+use crate::dto::{MediaInfo, PreparedPlayback, ScannedFile};
 use crate::error::{AppError, Result};
 use crate::state::AppState;
 use std::path::PathBuf;
@@ -53,6 +53,21 @@ pub async fn get_thumbnail(
     let cache_dir = crate::media::thumbs_cache_dir(&app)?;
     crate::media::thumbnail::thumbnail(&ffmpeg, &PathBuf::from(&path), &cache_dir, THUMB_WIDTH)
         .await
+}
+
+/// Prepare a source for the internal player: remux a web-friendly source (or transcode others) into a
+/// cached, webview-playable MP4 (ADR-PROJ-001 §5). Returns the cache path for `convertFileSrc`.
+#[tauri::command]
+pub async fn prepare_player(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    path: String,
+) -> Result<PreparedPlayback> {
+    tracing::info!(%path, "prepare_player");
+    let ffmpeg = resolve_tool(&app, &state, "ffmpeg")?;
+    let ffprobe = resolve_tool(&app, &state, "ffprobe")?;
+    let cache = crate::media::player_cache_dir(&app)?;
+    crate::player::prepare(&ffmpeg, &ffprobe, &PathBuf::from(&path), &cache).await
 }
 
 /// Resolve `tool` (`"ffmpeg"`/`"ffprobe"`) to a path via discovery (settings override → managed → PATH →

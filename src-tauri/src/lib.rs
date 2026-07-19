@@ -12,6 +12,7 @@ pub mod ffmpeg;
 pub mod jobs;
 pub mod logging;
 pub mod media;
+pub mod player;
 pub mod settings;
 pub mod state;
 pub mod tray;
@@ -62,6 +63,7 @@ pub fn run() {
             commands::media::scan_folder,
             commands::media::probe_media,
             commands::media::get_thumbnail,
+            commands::media::prepare_player,
             commands::jobs::list_presets,
             commands::jobs::enqueue_job,
             commands::jobs::cancel_job,

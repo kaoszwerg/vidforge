@@ -6,6 +6,7 @@ import { MetaRow } from "../components/ui/MetaRow";
 import { Select } from "../components/ui/Select";
 import { Button } from "../components/ui/Button";
 import { QualityBadge } from "../components/QualityBadge";
+import { VideoPlayer } from "../components/VideoPlayer";
 import { useProbe } from "../hooks/useProbe";
 import { useThumbnail } from "../hooks/useThumbnail";
 import { useEnqueueJob, usePresets } from "../hooks/useJobs";
@@ -38,10 +39,9 @@ export interface DetailViewProps {
 
 /**
  * Full technical metadata for one video (ADR-PROJ-001): container/duration/size/bitrate, the video
- * stream, every audio stream, every subtitle track, the thumbnail, a back control, and the Convert/Repair
- * actions that queue a job (`useEnqueueJob`) without blocking this view — the job then lives in the
- * status-bar process list. The player itself is a later slice (Phase 3 of `PLAN.md`); this view leaves a
- * clearly labelled placeholder for it rather than a half-built player.
+ * stream, every audio stream, every subtitle track, the thumbnail, a back control, the internal
+ * `VideoPlayer` and the Convert/Repair actions that queue a job (`useEnqueueJob`) without blocking this
+ * view — the job then lives in the status-bar process list.
  */
 export function DetailView({ path, onBack }: DetailViewProps) {
   const t = useT();
@@ -200,7 +200,7 @@ export function DetailView({ path, onBack }: DetailViewProps) {
             ) : null}
 
             <HudPanel accent="cyan" label={t("detail.panel.player")}>
-              <p className="text-dim text-sm">{t("detail.player.comingSoon")}</p>
+              <VideoPlayer path={path} />
             </HudPanel>
 
             <HudPanel accent="green" label={t("detail.panel.actions")}>

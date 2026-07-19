@@ -6,11 +6,13 @@ vi.mock("../hooks/useThumbnail", () => ({ useThumbnail: vi.fn() }));
 vi.mock("../hooks/useProbe", () => ({ useProbe: vi.fn() }));
 vi.mock("../hooks/useSettings", () => ({ useSettings: vi.fn(), useUpdateSettings: vi.fn() }));
 vi.mock("../hooks/useJobs", () => ({ usePresets: vi.fn(), useEnqueueJob: vi.fn() }));
+vi.mock("../hooks/usePreparePlayer", () => ({ usePreparePlayer: vi.fn() }));
 
 import { useThumbnail } from "../hooks/useThumbnail";
 import { useProbe } from "../hooks/useProbe";
 import { useSettings } from "../hooks/useSettings";
 import { usePresets, useEnqueueJob } from "../hooks/useJobs";
+import { usePreparePlayer } from "../hooks/usePreparePlayer";
 
 const PATH = "C:\\videos\\Trip to the Coast.mp4";
 
@@ -80,6 +82,16 @@ function mockEnqueue(overrides: Partial<ReturnType<typeof useEnqueueJob>> = {}) 
   } as ReturnType<typeof useEnqueueJob>);
 }
 
+function mockPlayer(overrides: Partial<ReturnType<typeof usePreparePlayer>> = {}) {
+  vi.mocked(usePreparePlayer).mockReturnValue({
+    source: undefined,
+    isPending: true,
+    isError: false,
+    error: null,
+    ...overrides,
+  } as ReturnType<typeof usePreparePlayer>);
+}
+
 describe("DetailView", () => {
   beforeEach(() => {
     vi.mocked(useSettings).mockReturnValue({ data: { language: "de" } } as ReturnType<
@@ -90,6 +102,7 @@ describe("DetailView", () => {
     enqueueMutate.mockReset();
     mockPresets();
     mockEnqueue();
+    mockPlayer();
   });
 
   it("derives the display name from the path (Windows separators)", () => {
@@ -159,10 +172,13 @@ describe("DetailView", () => {
     expect(screen.queryByText(/subrip/)).toBeNull();
   });
 
-  it("shows the coming-soon placeholder instead of a player", () => {
+  it("embeds the internal VideoPlayer in the player panel", () => {
     mockProbe({ data: mediaInfo });
+    mockPlayer({ source: undefined, isPending: true });
     render(<DetailView path={PATH} onBack={vi.fn()} />);
-    expect(screen.getByText(/bald verfügbar|demnächst/i)).toBeInTheDocument();
+    // While preparing, VideoPlayer shows its own loading text (VideoPlayer.test.tsx covers its states
+    // in full) — asserting it here pins that DetailView actually renders VideoPlayer, not a placeholder.
+    expect(screen.getByText("Vorschau wird vorbereitet…")).toBeInTheDocument();
   });
 
   it("shows a thumbnail placeholder icon until the thumbnail loads", () => {

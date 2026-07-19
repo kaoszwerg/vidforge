@@ -256,6 +256,18 @@ pub struct InstallProgress {
     pub message: Option<String>,
 }
 
+/// A prepared, webview-playable source for the internal player (ADR-PROJ-001 §5). The frontend passes
+/// `file_path` to `convertFileSrc` and plays it in a `<video>`; range/seek is handled by the asset
+/// protocol.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct PreparedPlayback {
+    /// Absolute path (under the app cache) to an MP4 the webview can play.
+    pub file_path: String,
+    /// True if the source had to be transcoded (not just remuxed) to become playable.
+    pub transcoded: bool,
+}
+
 fn default_ui_scale() -> f64 {
     1.0
 }
