@@ -1,6 +1,8 @@
 import { render, screen, fireEvent } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { LogsView } from "./LogsView";
+import { settingsDto } from "../test/settings";
 import type { LogRecord } from "../bindings/LogRecord";
 
 const clear = vi.fn();
@@ -10,7 +12,14 @@ vi.mock("../hooks/useLogs", () => ({
   useLogs: vi.fn(),
 }));
 
+vi.mock("../api/commands", () => ({
+  api: {
+    getSettings: vi.fn(),
+  },
+}));
+
 import { useLogs } from "../hooks/useLogs";
+import { api } from "../api/commands";
 
 function rec(overrides: Partial<LogRecord> = {}): LogRecord {
   return {
@@ -35,28 +44,39 @@ function mockLogsState(overrides: Partial<ReturnType<typeof useLogs>> = {}) {
   });
 }
 
+function renderLogs() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <LogsView />
+    </QueryClientProvider>,
+  );
+}
+
 describe("LogsView", () => {
   beforeEach(() => {
     clear.mockReset();
     setPaused.mockReset();
+    vi.mocked(api.getSettings).mockReset();
+    vi.mocked(api.getSettings).mockResolvedValue(settingsDto());
   });
 
   it("shows a loading state while the initial snapshot is pending", () => {
     mockLogsState({ isLoading: true, logs: [] });
-    render(<LogsView />);
-    expect(screen.getByText("Loading…")).toBeInTheDocument();
+    renderLogs();
+    expect(screen.getByText("Lädt…")).toBeInTheDocument();
   });
 
   it("shows an empty state when there are no records", () => {
     mockLogsState();
-    render(<LogsView />);
-    expect(screen.getByText("No log records.")).toBeInTheDocument();
+    renderLogs();
+    expect(screen.getByText("Keine Protokolleinträge.")).toBeInTheDocument();
   });
 
   it("shows an error state when the snapshot query fails", () => {
     mockLogsState({ error: new Error("boom") });
-    render(<LogsView />);
-    expect(screen.getByText(/Failed to load logs: boom/)).toBeInTheDocument();
+    renderLogs();
+    expect(screen.getByText(/Fehler beim Laden der Protokolle: boom/)).toBeInTheDocument();
   });
 
   it("filters rows by level", () => {
@@ -66,7 +86,7 @@ describe("LogsView", () => {
         rec({ message: "error line", level: "ERROR" }),
       ],
     });
-    render(<LogsView />);
+    renderLogs();
     expect(screen.getByText("info line")).toBeInTheDocument();
     expect(screen.getByText("error line")).toBeInTheDocument();
 
@@ -82,9 +102,9 @@ describe("LogsView", () => {
         rec({ message: "settings saved", target: "app::settings" }),
       ],
     });
-    render(<LogsView />);
+    renderLogs();
 
-    fireEvent.change(screen.getByPlaceholderText("search…"), {
+    fireEvent.change(screen.getByPlaceholderText("suchen…"), {
       target: { value: "settings" },
     });
     expect(screen.queryByText("boot complete")).toBeNull();
@@ -93,18 +113,18 @@ describe("LogsView", () => {
 
   it("toggles pause and triggers clear", () => {
     mockLogsState({ logs: [rec()] });
-    render(<LogsView />);
+    renderLogs();
 
     fireEvent.click(screen.getByRole("button", { name: "live" }));
     expect(setPaused).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "clear" }));
+    fireEvent.click(screen.getByRole("button", { name: "leeren" }));
     expect(clear).toHaveBeenCalledTimes(1);
   });
 
   it("shows the paused state as its own button label", () => {
     mockLogsState({ logs: [rec()], paused: true });
-    render(<LogsView />);
-    expect(screen.getByRole("button", { name: "paused" })).toBeInTheDocument();
+    renderLogs();
+    expect(screen.getByRole("button", { name: "pausiert" })).toBeInTheDocument();
   });
 });

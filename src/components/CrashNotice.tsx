@@ -3,6 +3,7 @@ import { AlertTriangle, X } from "lucide-react";
 import { useState } from "react";
 import { IconButton } from "./ui/IconButton";
 import { api } from "../api/commands";
+import { useT } from "../i18n";
 
 /**
  * Tells the user that the PREVIOUS run crashed, and where the report is (ADR-CORE-037, ADR-APP-032).
@@ -16,6 +17,7 @@ import { api } from "../api/commands";
  */
 export function CrashNotice() {
   const [dismissed, setDismissed] = useState(false);
+  const t = useT();
 
   // `staleTime: Infinity` + no refetch: the backend clears the marker when it hands it over, so asking
   // twice would return null and make the notice vanish under the user.
@@ -37,16 +39,16 @@ export function CrashNotice() {
     >
       <AlertTriangle size={16} strokeWidth={2} className="text-danger mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1 text-xs leading-relaxed">
-        <span className="text-fg">The last session ended in a crash.</span>{" "}
+        <span className="text-fg">{t("crashNotice.title")}</span>{" "}
         <span className="text-dim">
-          A report was saved to <span className="font-mono break-all">{reportPath}</span>. It stays
-          on this device.
+          {t("crashNotice.bodyPre")} <span className="font-mono break-all">{reportPath}</span>
+          {t("crashNotice.bodyPost")}
         </span>
       </div>
       <IconButton
-        label="Dismiss"
+        label={t("crashNotice.dismiss")}
         variant="ghost"
-        tooltip="Dismiss"
+        tooltip={t("crashNotice.dismiss")}
         onClick={() => setDismissed(true)}
         className="text-dim shrink-0"
       >

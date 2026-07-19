@@ -1,21 +1,23 @@
 import { Home, ScrollText, Settings } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { IconButton } from "../ui/IconButton";
+import { useT } from "../../i18n";
 import { useUiStore, type ViewId } from "../../store/ui";
 
 type NavItem = { id: ViewId; Icon: LucideIcon; label: string };
-
-const MAIN_NAV: NavItem[] = [{ id: "home", Icon: Home, label: "Home" }];
-
-const BOTTOM_NAV: NavItem[] = [
-  { id: "logs", Icon: ScrollText, label: "Logs" },
-  { id: "settings", Icon: Settings, label: "Settings" },
-];
 
 /** Left HUD navigation rail: main views at the top, logs/settings pinned to the bottom. */
 export function Sidebar() {
   const view = useUiStore((s) => s.view);
   const setView = useUiStore((s) => s.setView);
+  const t = useT();
+
+  const mainNav: NavItem[] = [{ id: "home", Icon: Home, label: t("nav.home") }];
+  const bottomNav: NavItem[] = [
+    { id: "logs", Icon: ScrollText, label: t("nav.logs") },
+    { id: "settings", Icon: Settings, label: t("nav.settings") },
+  ];
+
   return (
     <nav
       className="hud-strip flex w-14 shrink-0 flex-col items-center gap-1.5 py-2"
@@ -23,9 +25,9 @@ export function Sidebar() {
         borderRight: "1px solid rgb(var(--saga-neon-cyan-rgb) / 0.3)",
         borderBottom: "none",
       }}
-      aria-label="Primary"
+      aria-label={t("nav.primaryLandmark")}
     >
-      {MAIN_NAV.map((item) => (
+      {mainNav.map((item) => (
         <NavButton
           key={item.id}
           item={item}
@@ -34,7 +36,7 @@ export function Sidebar() {
         />
       ))}
       <div className="flex-1" />
-      {BOTTOM_NAV.map((item) => (
+      {bottomNav.map((item) => (
         <NavButton
           key={item.id}
           item={item}

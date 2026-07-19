@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { TitleBar } from "./TitleBar";
 import { APP_NAME } from "../../lib/app";
+import { settingsDto } from "../../test/settings";
 import type { BuildInfo } from "../../bindings/BuildInfo";
 
 // TitleBar imports this SVG for the app icon; the build pipeline normally provides it, jsdom needs a stub.
@@ -11,6 +12,7 @@ vi.mock("../../../src-tauri/icons/icon.svg", () => ({ default: "icon.svg" }));
 vi.mock("../../api/commands", () => ({
   api: {
     buildInfo: vi.fn(),
+    getSettings: vi.fn(),
   },
 }));
 
@@ -25,6 +27,7 @@ import { api } from "../../api/commands";
 
 function renderTitleBar(build: BuildInfo) {
   vi.mocked(api.buildInfo).mockResolvedValue(build);
+  vi.mocked(api.getSettings).mockResolvedValue(settingsDto());
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
@@ -48,6 +51,7 @@ describe("TitleBar", () => {
     toggleMaximize.mockReset();
     close.mockReset();
     vi.mocked(api.buildInfo).mockReset();
+    vi.mocked(api.getSettings).mockReset();
   });
 
   it("shows the app name and a dev badge for a dev build", async () => {
@@ -65,13 +69,13 @@ describe("TitleBar", () => {
   it("wires the window controls to the Tauri window API", () => {
     renderTitleBar(devBuild);
 
-    fireEvent.click(screen.getByRole("button", { name: "Minimize" }));
+    fireEvent.click(screen.getByRole("button", { name: "Minimieren" }));
     expect(minimize).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "Maximize" }));
+    fireEvent.click(screen.getByRole("button", { name: "Maximieren" }));
     expect(toggleMaximize).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Schließen" }));
     expect(close).toHaveBeenCalledTimes(1);
   });
 });

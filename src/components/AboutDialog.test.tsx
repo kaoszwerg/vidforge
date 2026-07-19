@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { AboutDialog } from "./AboutDialog";
 import { APP_NAME } from "../lib/app";
+import { settingsDto } from "../test/settings";
 import type { BuildInfo } from "../bindings/BuildInfo";
 
 // AboutDialog imports this SVG for the app mark; the build pipeline normally provides it, jsdom needs a stub.
@@ -11,6 +12,7 @@ vi.mock("../../src-tauri/icons/icon.svg", () => ({ default: "icon.svg" }));
 vi.mock("../api/commands", () => ({
   api: {
     buildInfo: vi.fn(),
+    getSettings: vi.fn(),
   },
 }));
 
@@ -40,6 +42,8 @@ describe("AboutDialog", () => {
   beforeEach(() => {
     vi.mocked(api.buildInfo).mockReset();
     vi.mocked(api.buildInfo).mockResolvedValue(build);
+    vi.mocked(api.getSettings).mockReset();
+    vi.mocked(api.getSettings).mockResolvedValue(settingsDto());
   });
 
   it("shows the app identity and the build metadata", async () => {
@@ -52,7 +56,7 @@ describe("AboutDialog", () => {
 
   it("closes on the close button", () => {
     const onClose = renderDialog();
-    fireEvent.click(screen.getByRole("button", { name: "close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Schließen" }));
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

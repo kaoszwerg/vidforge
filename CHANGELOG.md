@@ -13,3 +13,11 @@ All notable changes to this project are documented here. The format follows
   `FfmpegStatus` binding. Absence is a typed state, not a crash (ADR-PROJ-001, ADR-CORE-037).
 - Expanded settings: UI language (`de`/`en`, default German), `ffmpeg`/`ffprobe` path overrides, a
   default output directory, job concurrency (clamped 1–8) and a recursive-scan toggle.
+- Internationalization: German (default) and English UI, switchable in Settings — a hand-rolled message
+  catalogue (`src/i18n`, 62 keys) and a `useT()` hook that reads the language from settings.
+- `Select` HUD primitive — an accessible combobox/listbox replacing the native `<select>` (ADR-APP-026).
+
+### Fixed
+
+- Fatal-screen crash path: `showFatal` now keeps the `QueryClientProvider`, so the localized `FatalScreen`
+  can read settings instead of throwing "No QueryClient set" on top of the crash it is reporting.

@@ -4,11 +4,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { StatusBar } from "./StatusBar";
 import { APP_NAME } from "../../lib/app";
 import { useUiStore } from "../../store/ui";
+import { settingsDto } from "../../test/settings";
 import type { BuildInfo } from "../../bindings/BuildInfo";
 
 vi.mock("../../api/commands", () => ({
   api: {
     buildInfo: vi.fn(),
+    getSettings: vi.fn(),
   },
 }));
 
@@ -37,6 +39,8 @@ describe("StatusBar", () => {
     useUiStore.setState({ view: "home", aboutOpen: false });
     vi.mocked(api.buildInfo).mockReset();
     vi.mocked(api.buildInfo).mockResolvedValue(build);
+    vi.mocked(api.getSettings).mockReset();
+    vi.mocked(api.getSettings).mockResolvedValue(settingsDto());
   });
 
   it("opens the About dialog when the build identity is clicked", async () => {
@@ -59,12 +63,12 @@ describe("StatusBar", () => {
     const onScrollTop = vi.fn();
     renderStatusBar({ canScrollTop: true, onScrollTop });
 
-    fireEvent.click(screen.getByRole("button", { name: "Scroll to top" }));
+    fireEvent.click(screen.getByRole("button", { name: "Nach oben scrollen" }));
     expect(onScrollTop).toHaveBeenCalledTimes(1);
   });
 
   it("hides the scroll-to-top control when canScrollTop is false", () => {
     renderStatusBar({ canScrollTop: false });
-    expect(screen.queryByRole("button", { name: "Scroll to top" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Nach oben scrollen" })).toBeNull();
   });
 });

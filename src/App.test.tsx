@@ -59,9 +59,9 @@ describe("App shell", () => {
 
   it("shows the primary navigation rail", () => {
     renderApp();
-    expect(screen.getByLabelText("Primary")).toBeInTheDocument();
-    expect(screen.getByLabelText("Home")).toBeInTheDocument();
-    expect(screen.getByLabelText("Logs")).toBeInTheDocument();
-    expect(screen.getByLabelText("Settings")).toBeInTheDocument();
+    expect(screen.getByLabelText("Hauptnavigation")).toBeInTheDocument();
+    expect(screen.getByLabelText("Start")).toBeInTheDocument();
+    expect(screen.getByLabelText("Protokolle")).toBeInTheDocument();
+    expect(screen.getByLabelText("Einstellungen")).toBeInTheDocument();
   });
 });

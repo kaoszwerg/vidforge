@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { HudPanel } from "./ui/HudPanel";
 import { Button } from "./ui/Button";
 import { useBuildInfo } from "../hooks/useBuildInfo";
+import { useT } from "../i18n";
 import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from "../lib/app";
 // The very icon bundled as the native app/dock/tray icon — one source (ADR-CORE-005).
 import logoUrl from "../../src-tauri/icons/icon.svg";
@@ -11,6 +12,7 @@ import logoUrl from "../../src-tauri/icons/icon.svg";
  * or a backdrop click. */
 export function AboutDialog({ onClose }: { onClose: () => void }) {
   const { data: build } = useBuildInfo();
+  const t = useT();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -32,7 +34,7 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
       }}
     >
       <div className="w-full max-w-md">
-        <HudPanel accent="cyan" label="About">
+        <HudPanel accent="cyan" label={t("about.title")}>
           <div className="flex flex-col items-center gap-4 text-center">
             <img src={logoUrl} alt="" aria-hidden className="h-20 w-20" />
 
@@ -49,19 +51,22 @@ export function AboutDialog({ onClose }: { onClose: () => void }) {
             <p className="text-dim text-xs leading-relaxed">{APP_DESCRIPTION}</p>
 
             <dl className="border-elevated text-dim grid w-full grid-cols-2 gap-x-4 gap-y-1.5 border-t pt-3 text-left font-mono text-xs">
-              <Meta k="version" v={build ? `v${build.version}` : "—"} />
+              <Meta k={t("common.meta.version")} v={build ? `v${build.version}` : "—"} />
               <div className="flex justify-between gap-2">
-                <dt>channel</dt>
+                <dt>{t("common.meta.channel")}</dt>
                 <dd className={build?.channel === "dev" ? "text-gold" : "text-fg"}>
                   {build?.channel ?? "—"}
                 </dd>
               </div>
-              <Meta k="commit" v={build ? `${build.git_sha}${build.git_dirty ? "+" : ""}` : "—"} />
-              <Meta k="commit date" v={commitDate} />
+              <Meta
+                k={t("common.meta.commit")}
+                v={build ? `${build.git_sha}${build.git_dirty ? "+" : ""}` : "—"}
+              />
+              <Meta k={t("common.meta.commitDate")} v={commitDate} />
             </dl>
 
             <Button onClick={onClose} className="mt-1 px-4 py-1.5 text-xs tracking-wider uppercase">
-              close
+              {t("common.close")}
             </Button>
           </div>
         </HudPanel>

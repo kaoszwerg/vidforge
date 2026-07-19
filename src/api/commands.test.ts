@@ -47,39 +47,72 @@ describe("api", () => {
   });
 
   describe("updateSettings", () => {
-    it("pins the payload shape: uiScale sent, minimizeToTray defaults to null", async () => {
+    it("pins the payload shape: uiScale sent, every other field null", async () => {
       mockInvoke.mockResolvedValue({ ui_scale: 1.25, minimize_to_tray: false });
       await api.updateSettings({ uiScale: 1.25 });
       expect(mockInvoke).toHaveBeenCalledWith("update_settings", {
         uiScale: 1.25,
         minimizeToTray: null,
+        language: null,
+        ffmpegPath: null,
+        ffprobePath: null,
+        outputDir: null,
+        jobConcurrency: null,
+        recursiveScan: null,
       });
     });
 
-    it("pins the payload shape: minimizeToTray sent, uiScale defaults to null", async () => {
+    it("pins the payload shape: minimizeToTray sent, every other field null", async () => {
       mockInvoke.mockResolvedValue({ ui_scale: 1, minimize_to_tray: true });
       await api.updateSettings({ minimizeToTray: true });
       expect(mockInvoke).toHaveBeenCalledWith("update_settings", {
         uiScale: null,
         minimizeToTray: true,
+        language: null,
+        ffmpegPath: null,
+        ffprobePath: null,
+        outputDir: null,
+        jobConcurrency: null,
+        recursiveScan: null,
       });
     });
 
-    it("sends both fields as null when no options are given", async () => {
+    it("sends every field as null when no options are given", async () => {
       mockInvoke.mockResolvedValue({ ui_scale: 1, minimize_to_tray: false });
       await api.updateSettings({});
       expect(mockInvoke).toHaveBeenCalledWith("update_settings", {
         uiScale: null,
         minimizeToTray: null,
+        language: null,
+        ffmpegPath: null,
+        ffprobePath: null,
+        outputDir: null,
+        jobConcurrency: null,
+        recursiveScan: null,
       });
     });
 
-    it("sends both fields when both are given", async () => {
+    it("sends every given field, nulling out the rest", async () => {
       mockInvoke.mockResolvedValue({ ui_scale: 0.8, minimize_to_tray: true });
-      await api.updateSettings({ uiScale: 0.8, minimizeToTray: true });
+      await api.updateSettings({
+        uiScale: 0.8,
+        minimizeToTray: true,
+        language: "en",
+        ffmpegPath: "/usr/bin/ffmpeg",
+        ffprobePath: "/usr/bin/ffprobe",
+        outputDir: "/home/user/videos-out",
+        jobConcurrency: 4,
+        recursiveScan: false,
+      });
       expect(mockInvoke).toHaveBeenCalledWith("update_settings", {
         uiScale: 0.8,
         minimizeToTray: true,
+        language: "en",
+        ffmpegPath: "/usr/bin/ffmpeg",
+        ffprobePath: "/usr/bin/ffprobe",
+        outputDir: "/home/user/videos-out",
+        jobConcurrency: 4,
+        recursiveScan: false,
       });
     });
   });

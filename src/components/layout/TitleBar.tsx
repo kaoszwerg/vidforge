@@ -3,6 +3,7 @@ import { Minus, Square, X } from "lucide-react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { IconButton } from "../ui/IconButton";
 import { useBuildInfo } from "../../hooks/useBuildInfo";
+import { useT } from "../../i18n";
 import { APP_NAME, APP_TAGLINE } from "../../lib/app";
 import logoUrl from "../../../src-tauri/icons/icon.svg";
 
@@ -10,6 +11,7 @@ import logoUrl from "../../../src-tauri/icons/icon.svg";
  * a non-drag section. A DEV badge marks a development build (ADR-CORE-024). */
 export function TitleBar() {
   const { data: build } = useBuildInfo();
+  const t = useT();
 
   return (
     <header
@@ -43,19 +45,25 @@ export function TitleBar() {
         </span>
         {build?.channel === "dev" ? (
           <span className="hud-clip-sm hud-accent-gold neon-glow-gold bg-elevated px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-[var(--saga-gold)] uppercase">
-            Dev
+            {t("titlebar.devBadge")}
           </span>
         ) : null}
       </div>
 
       <div className="flex items-center gap-1.5">
-        <WinButton label="Minimize" onClick={() => void getCurrentWindow().minimize()}>
+        <WinButton
+          label={t("titlebar.minimize")}
+          onClick={() => void getCurrentWindow().minimize()}
+        >
           <Minus size={15} strokeWidth={2.5} />
         </WinButton>
-        <WinButton label="Maximize" onClick={() => void getCurrentWindow().toggleMaximize()}>
+        <WinButton
+          label={t("titlebar.maximize")}
+          onClick={() => void getCurrentWindow().toggleMaximize()}
+        >
           <Square size={13} strokeWidth={2.5} />
         </WinButton>
-        <WinButton label="Close" danger onClick={() => void getCurrentWindow().close()}>
+        <WinButton label={t("common.close")} danger onClick={() => void getCurrentWindow().close()}>
           <X size={16} strokeWidth={2.5} />
         </WinButton>
       </div>

@@ -2,6 +2,7 @@ import { AlertOctagon } from "lucide-react";
 import { HudPanel } from "./ui/HudPanel";
 import { Button } from "./ui/Button";
 import { api } from "../api/commands";
+import { useT } from "../i18n";
 
 interface FatalScreenProps {
   /** The value that was thrown. Anything is possible in JS — this is rendered defensively. */
@@ -26,37 +27,37 @@ function messageOf(error: unknown): string {
  * It states where the report is, because a user who can find the file is a user who can send it.
  */
 export function FatalScreen({ error, reportPath }: FatalScreenProps) {
+  // `useT` reads the language via `useSettings` (TanStack Query), so this last-resort screen still
+  // needs a `QueryClientProvider` ancestor even when the rest of the app has been discarded — `main.tsx`
+  // wraps every render path that can reach `FatalScreen` in one built from the same stable `queryClient`
+  // (rule:crash-handling: the report is on-device and legible in the user's own language, not a fallback
+  // to English because the last-resort screen quietly dropped its one dependency).
+  const t = useT();
   return (
     <div className="bg-base flex h-screen w-screen items-center justify-center p-8">
-      <HudPanel accent="danger" label="FATAL ERROR" className="w-full max-w-2xl">
+      <HudPanel accent="danger" label={t("fatal.title")} className="w-full max-w-2xl">
         <div className="flex items-start gap-4">
           <AlertOctagon size={28} strokeWidth={1.5} className="text-danger mt-1 shrink-0" />
           <div className="min-w-0 flex-1">
-            <p className="text-fg mb-2 text-sm leading-relaxed">
-              The interface hit an error it could not recover from and has stopped. Your settings
-              and logs on disk are untouched.
-            </p>
+            <p className="text-fg mb-2 text-sm leading-relaxed">{t("fatal.body")}</p>
 
             <p className="text-dim mb-4 font-mono text-xs break-words">{messageOf(error)}</p>
 
             <p className="text-dim mb-5 text-xs leading-relaxed">
               {reportPath ? (
                 <>
-                  A crash report was written to{" "}
-                  <span className="text-fg font-mono break-all">{reportPath}</span>. It stays on
-                  this device — send it along if you report this.
+                  {t("fatal.reportPre")}{" "}
+                  <span className="text-fg font-mono break-all">{reportPath}</span>
+                  {t("fatal.reportPost")}
                 </>
               ) : (
-                <>
-                  The crash report could not be written. The failure is still in the application log
-                  under the app data directory.
-                </>
+                t("fatal.reportMissing")
               )}
             </p>
 
             <div className="flex gap-3">
               <Button accent="cyan" onClick={() => window.location.reload()}>
-                Restart interface
+                {t("fatal.restart")}
               </Button>
               <Button
                 accent="danger"
@@ -67,7 +68,7 @@ export function FatalScreen({ error, reportPath }: FatalScreenProps) {
                   void api.exitAfterCrash().catch((e) => console.error("[crash] exit failed", e));
                 }}
               >
-                Quit
+                {t("fatal.quit")}
               </Button>
             </div>
           </div>

@@ -23,12 +23,28 @@ export const api = {
   getSettings: () => invoke<SettingsDto>("get_settings"),
   /**
    * Partial update — omitted fields keep their current value. Toggling `minimizeToTray` installs or
-   * removes the system-tray icon immediately (no restart).
+   * removes the system-tray icon immediately (no restart); toggling `language` re-renders the UI in
+   * the new language immediately (no restart) via `useT`/`useSettings`.
    */
-  updateSettings: (opts: { uiScale?: number; minimizeToTray?: boolean }) =>
+  updateSettings: (opts: {
+    uiScale?: number;
+    minimizeToTray?: boolean;
+    language?: string;
+    ffmpegPath?: string;
+    ffprobePath?: string;
+    outputDir?: string;
+    jobConcurrency?: number;
+    recursiveScan?: boolean;
+  }) =>
     invoke<SettingsDto>("update_settings", {
       uiScale: opts.uiScale ?? null,
       minimizeToTray: opts.minimizeToTray ?? null,
+      language: opts.language ?? null,
+      ffmpegPath: opts.ffmpegPath ?? null,
+      ffprobePath: opts.ffprobePath ?? null,
+      outputDir: opts.outputDir ?? null,
+      jobConcurrency: opts.jobConcurrency ?? null,
+      recursiveScan: opts.recursiveScan ?? null,
     }),
   /**
    * Resolve the ffmpeg suite (ffmpeg + ffprobe): settings override → managed install → PATH → platform

@@ -3,6 +3,7 @@ import { useLogs } from "../hooks/useLogs";
 import { HudPanel } from "../components/ui/HudPanel";
 import { Button } from "../components/ui/Button";
 import { TextField } from "../components/ui/TextField";
+import { useT } from "../i18n";
 import { PALETTE } from "../styles/palette";
 import type { LogRecord } from "../bindings/LogRecord";
 
@@ -21,6 +22,7 @@ const LEVEL_COLOR: Record<string, string> = {
  * sort, pause and clear. */
 export function LogsView() {
   const { logs, clear, paused, setPaused, error, isLoading } = useLogs();
+  const t = useT();
   const [level, setLevel] = useState<LevelFilter>("ALL");
   const [q, setQ] = useState("");
   const [desc, setDesc] = useState(true);
@@ -43,7 +45,7 @@ export function LogsView() {
     <div className="flex h-full flex-col gap-4 overflow-hidden p-6">
       <header className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="hud-label" style={{ "--hud-label-size": "1rem" } as React.CSSProperties}>
-          Logs
+          {t("nav.logs")}
         </h1>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex gap-1">
@@ -62,16 +64,16 @@ export function LogsView() {
           <TextField
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="search…"
-            aria-label="Search logs"
+            placeholder={t("logs.searchPlaceholder")}
+            aria-label={t("logs.searchAriaLabel")}
             className="w-40"
           />
           <Button
             onClick={() => setDesc((d) => !d)}
-            tooltip="Toggle sort order"
+            tooltip={t("logs.toggleSortTooltip")}
             className="px-2.5 py-1 text-xs"
           >
-            {desc ? "newest" : "oldest"}
+            {desc ? t("logs.newest") : t("logs.oldest")}
           </Button>
           <Button
             onClick={() => setPaused((p) => !p)}
@@ -79,22 +81,24 @@ export function LogsView() {
             active={paused}
             className="px-2.5 py-1 text-xs"
           >
-            {paused ? "paused" : "live"}
+            {paused ? t("logs.paused") : t("logs.live")}
           </Button>
           <Button onClick={clear} accent="danger" className="px-2.5 py-1 text-xs">
-            clear
+            {t("logs.clear")}
           </Button>
         </div>
       </header>
 
-      <HudPanel accent="cyan" label={`${rows.length} records`}>
+      <HudPanel accent="cyan" label={t("logs.recordsCount", { count: rows.length })}>
         <div className="flex max-h-[calc(100vh-260px)] flex-col overflow-auto font-mono text-xs">
           {error ? (
-            <p style={{ color: PALETTE.danger }}>Failed to load logs: {error.message}</p>
+            <p style={{ color: PALETTE.danger }}>
+              {t("logs.loadError", { message: error.message })}
+            </p>
           ) : isLoading && logs.length === 0 ? (
-            <p className="text-dim">Loading…</p>
+            <p className="text-dim">{t("common.loading")}</p>
           ) : rows.length === 0 ? (
-            <p className="text-dim">No log records.</p>
+            <p className="text-dim">{t("logs.noRecords")}</p>
           ) : (
             rows.map((r, i) => <LogLine key={`${r.ts}-${i}`} rec={r} />)
           )}

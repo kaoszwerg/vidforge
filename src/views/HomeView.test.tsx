@@ -3,11 +3,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { HomeView } from "./HomeView";
 import { APP_DESCRIPTION, APP_NAME } from "../lib/app";
+import { settingsDto } from "../test/settings";
 import type { BuildInfo } from "../bindings/BuildInfo";
 
 vi.mock("../api/commands", () => ({
   api: {
     buildInfo: vi.fn(),
+    getSettings: vi.fn(),
   },
 }));
 
@@ -25,6 +27,8 @@ function renderHome() {
 describe("HomeView", () => {
   beforeEach(() => {
     vi.mocked(api.buildInfo).mockReset();
+    vi.mocked(api.getSettings).mockReset();
+    vi.mocked(api.getSettings).mockResolvedValue(settingsDto());
   });
 
   it("shows the app name and description", () => {

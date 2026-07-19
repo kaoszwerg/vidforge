@@ -29,9 +29,18 @@ const mount =
   document.getElementById("root") ?? document.body.appendChild(document.createElement("div"));
 const reactRoot = ReactDOM.createRoot(mount);
 
-/** Replace whatever is on screen with the fatal screen. The failed tree is discarded, never resumed. */
+/** Replace whatever is on screen with the fatal screen. The failed tree is discarded, never resumed.
+ * Still wrapped in `QueryClientProvider`: `FatalScreen` reads the UI language via `useT`/`useSettings`
+ * (TanStack Query), and this render fully replaces the tree — including the app's own provider — so
+ * without this wrapper the last-resort screen would throw "No QueryClient set" on top of the crash it
+ * is trying to report. `queryClient` is a plain object created before any rendering, untouched by
+ * whatever broke the UI tree, so reusing it here adds no new failure mode. */
 const showFatal = (error: unknown, reportPath: string | null) =>
-  reactRoot.render(<FatalScreen error={error} reportPath={reportPath} />);
+  reactRoot.render(
+    <QueryClientProvider client={queryClient}>
+      <FatalScreen error={error} reportPath={reportPath} />
+    </QueryClientProvider>,
+  );
 
 installGlobalCrashHandlers(showFatal);
 

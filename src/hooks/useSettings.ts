@@ -10,11 +10,15 @@ export function useSettings() {
   });
 }
 
+/** Options accepted by {@link useUpdateSettings} — a partial update; omitted fields keep their
+ * current persisted value (mirrors the backend's own partial-update semantics). */
+export type UpdateSettingsOptions = Parameters<typeof api.updateSettings>[0];
+
 /** Mutate user settings; writes the returned state straight into the settings query cache. */
 export function useUpdateSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (opts: { uiScale?: number; minimizeToTray?: boolean }) => api.updateSettings(opts),
+    mutationFn: (opts: UpdateSettingsOptions) => api.updateSettings(opts),
     onSuccess: (data) => qc.setQueryData(["settings"], data),
   });
 }
