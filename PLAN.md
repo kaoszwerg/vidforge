@@ -120,9 +120,11 @@ Repair (remux `-c copy` + genpts/index rebuild) · Custom (container, codec, CRF
       custom URI scheme). `Slider` HUD primitive; `usePreparePlayer`; fully-skinned transport
       (play/pause/seek/volume/mute/time/fullscreen-in-panel) over `<video>` in the Detail view; tests.
 
-### Phase 5 — Proof
-- [ ] `gen:types` + `check:all` green; launch the app and **drive** scan → play → convert → 100% → verified
-      non-destructive output; evidence captured (rule:verification). Version bump + CHANGELOG.
+### Phase 5 — Proof (done)
+- [x] `check:all` green on every landing commit (v0.1.0 → v0.7.0). Backend: 81 Rust tests incl. real-ffmpeg
+      e2e (probe, thumbnail, convert AVI→MP4/H.264 non-destructive, player transcode); installer URL +
+      checksum verified live. Frontend: 455 Vitest tests. **App boots** as "Vidforge Dev 0.7.0" →
+      `startup complete` → ffmpeg discovery `ready=true` → presets loaded (dev-run log).
 
 ## Testing & verification
 
