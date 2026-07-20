@@ -39,6 +39,9 @@ All notable changes to this project are documented here. The format follows
   `checksums.sha256`, extracts it via system `tar` and installs `ffmpeg`+`ffprobe` into `<app_data>/bin`,
   with live progress. macOS shows a manual-install (Homebrew) message. Exposed as `install_ffmpeg` and an
   "Install ffmpeg" button in the ffmpeg-missing notice. Verification via the `sha2` crate.
+- **Self-cleaning caches**: the thumbnail (128 MB) and prepared-player (2 GB) cache dirs are kept under a
+  byte budget by evicting the oldest files at startup, so a long-lived install never grows the cache
+  without bound. (A cache hit already avoided the ffmpeg work; this only bounds on-disk size.)
 - **Internal player** — a fully HUD-skinned HTML5 `<video>` in the Detail view (no VLC, no separate
   window). `prepare_player` remuxes a web-friendly source (or transcodes others) into a cached MP4 played
   via the asset protocol; custom transport (play/pause, seek, volume/mute, fullscreen) with

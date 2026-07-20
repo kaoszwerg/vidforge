@@ -2,6 +2,7 @@
 //! `ffprobe`, deriving a quality rating, and generating thumbnails via `ffmpeg`. Everything here shells
 //! out to the external tools — nothing decodes video in-process.
 
+pub mod cache;
 pub mod probe;
 pub mod quality;
 pub mod scan;

@@ -140,6 +140,12 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         app.handle().clone(),
         concurrency,
     ));
+    // Self-cleaning caches (owner request): keep the thumbnail/player cache dirs under budget by
+    // evicting the oldest files, so a long-lived install never grows the cache without bound. Best-effort
+    // and fast (a stat + a few deletes); it never touches a source file (ADR-PROJ-001, media/cache.rs).
+    let cache = data_dir.join("cache");
+    media::cache::prune(&cache.join("thumbnails"), media::cache::THUMBS_BUDGET);
+    media::cache::prune(&cache.join("player"), media::cache::PLAYER_BUDGET);
     // Close handler is always registered; it consults the live `minimize_to_tray` setting. The tray
     // icon itself is installed only when the setting is on (default off).
     tray::install_close_handler(app.handle());
