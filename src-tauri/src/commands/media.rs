@@ -2,7 +2,7 @@
 //! file. Thin — resolve the tool, do the work, map the error. Each command acts only on a path the user
 //! chose (a folder they picked, or a file that folder's scan produced).
 
-use crate::dto::{MediaInfo, PreparedPlayback, ScannedFile};
+use crate::dto::{IntegrityLevel, IntegrityReport, MediaInfo, PreparedPlayback, ScannedFile};
 use crate::error::{AppError, Result};
 use crate::state::AppState;
 use std::path::PathBuf;
@@ -84,6 +84,27 @@ pub async fn prepare_player(
             })?;
     }
     Ok(prepared)
+}
+
+/// Check one file for defects (ADR-PROJ-001). `deep=false` is the fast container/packet check (run
+/// automatically per card); `deep=true` fully decodes the stream (on-demand). A *defective* file is a
+/// normal result, not an error — only an unrunnable ffmpeg errors. `path` must be one `scan_folder`
+/// returned.
+#[tauri::command]
+pub async fn check_integrity(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    path: String,
+    deep: bool,
+) -> Result<IntegrityReport> {
+    tracing::debug!(%path, deep, "check_integrity");
+    let ffmpeg = resolve_tool(&app, &state, "ffmpeg")?;
+    let level = if deep {
+        IntegrityLevel::Deep
+    } else {
+        IntegrityLevel::Quick
+    };
+    crate::media::integrity::check(&ffmpeg, &PathBuf::from(&path), level).await
 }
 
 /// Resolve `tool` (`"ffmpeg"`/`"ffprobe"`) to a path via discovery (settings override → managed → PATH →

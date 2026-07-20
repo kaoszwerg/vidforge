@@ -5,6 +5,7 @@ import { Button } from "./ui/Button";
 import { Checkbox } from "./ui/Checkbox";
 import { HudPanel } from "./ui/HudPanel";
 import { QualityBadge } from "./QualityBadge";
+import { useIntegrity } from "../hooks/useIntegrity";
 import { useProbe } from "../hooks/useProbe";
 import { useThumbnail } from "../hooks/useThumbnail";
 import { useT } from "../i18n";
@@ -93,6 +94,11 @@ export function VideoCard({
   const t = useT();
   const thumb = useThumbnail(file.path);
   const probe = useProbe(file.path);
+  // Auto quick integrity check as the card mounts (owner: "auto quick check on scan"). A defective file
+  // is flagged with a prominent overlay below; a healthy one shows nothing (no clutter). Errors here
+  // (e.g. ffmpeg not installed) simply leave the card unflagged.
+  const integrity = useIntegrity(file.path);
+  const defective = integrity.data?.healthy === false;
 
   const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
     onSelect(file.path, { ctrl: e.ctrlKey, meta: e.metaKey, shift: e.shiftKey });
@@ -115,7 +121,7 @@ export function VideoCard({
         aria-pressed={selected}
       />
       <HudPanel
-        accent={selected ? "green" : "cyan"}
+        accent={selected ? "green" : defective ? "danger" : "cyan"}
         className={`group-hover:neon-glow-cyan pointer-events-none relative z-[1] h-full overflow-hidden transition-shadow ${selected ? "neon-glow-green" : ""}`}
       >
         <div className="flex flex-col gap-2">
@@ -155,6 +161,17 @@ export function VideoCard({
             </div>
             {probe.data ? (
               <QualityBadge tier={probe.data.quality} className="absolute top-2 right-2 z-10" />
+            ) : null}
+            {/* A defective file is flagged prominently (owner) — a danger badge on the preview plus the
+                panel's red border above. A healthy file shows nothing, to keep the grid uncluttered. */}
+            {defective ? (
+              <Badge
+                accent="danger"
+                className="absolute bottom-2 left-2 z-10 flex items-center gap-1"
+              >
+                <AlertTriangle size={10} strokeWidth={2.5} aria-hidden />
+                {t("integrity.defective")}
+              </Badge>
             ) : null}
           </div>
 

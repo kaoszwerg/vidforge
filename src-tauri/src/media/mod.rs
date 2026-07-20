@@ -3,6 +3,7 @@
 //! out to the external tools — nothing decodes video in-process.
 
 pub mod cache;
+pub mod integrity;
 pub mod probe;
 pub mod quality;
 pub mod scan;

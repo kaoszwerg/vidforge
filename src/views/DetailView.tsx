@@ -6,6 +6,7 @@ import { MetaRow } from "../components/ui/MetaRow";
 import { Select } from "../components/ui/Select";
 import { Button } from "../components/ui/Button";
 import { QualityBadge } from "../components/QualityBadge";
+import { IntegrityPanel } from "../components/IntegrityPanel";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { useProbe } from "../hooks/useProbe";
 import { useEnqueueJob, usePresets } from "../hooks/useJobs";
@@ -191,6 +192,8 @@ export function DetailView({ path, onBack }: DetailViewProps) {
                 </ul>
               </HudPanel>
             ) : null}
+
+            <IntegrityPanel path={path} />
 
             <HudPanel accent="green" label={t("detail.panel.actions")}>
               <div className="space-y-3">

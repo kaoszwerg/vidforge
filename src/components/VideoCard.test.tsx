@@ -4,10 +4,12 @@ import { VideoCard } from "./VideoCard";
 
 vi.mock("../hooks/useThumbnail", () => ({ useThumbnail: vi.fn() }));
 vi.mock("../hooks/useProbe", () => ({ useProbe: vi.fn() }));
+vi.mock("../hooks/useIntegrity", () => ({ useIntegrity: vi.fn() }));
 vi.mock("../hooks/useSettings", () => ({ useSettings: vi.fn(), useUpdateSettings: vi.fn() }));
 
 import { useThumbnail } from "../hooks/useThumbnail";
 import { useProbe } from "../hooks/useProbe";
+import { useIntegrity } from "../hooks/useIntegrity";
 import { useSettings } from "../hooks/useSettings";
 
 const file = { path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1_500_000 };
@@ -49,6 +51,16 @@ function mockProbe(overrides: Partial<ReturnType<typeof useProbe>> = {}) {
   } as ReturnType<typeof useProbe>);
 }
 
+function mockIntegrity(overrides: Partial<ReturnType<typeof useIntegrity>> = {}) {
+  vi.mocked(useIntegrity).mockReturnValue({
+    data: undefined,
+    isPending: false,
+    isError: false,
+    error: null,
+    ...overrides,
+  } as ReturnType<typeof useIntegrity>);
+}
+
 describe("VideoCard", () => {
   beforeEach(() => {
     vi.mocked(useSettings).mockReturnValue({ data: { language: "de" } } as ReturnType<
@@ -56,6 +68,7 @@ describe("VideoCard", () => {
     >);
     mockThumb();
     mockProbe();
+    mockIntegrity();
   });
 
   it("renders the file name as the card's accessible name", () => {
@@ -302,6 +315,38 @@ describe("VideoCard", () => {
     const wrapper = checkboxWrapper("„a.mp4“ auswählen");
     expect(wrapper?.className).toContain("top-2");
     expect(wrapper?.className).toContain("left-2");
+  });
+
+  describe("defect flag (auto quick integrity check)", () => {
+    it("flags a defective file with a danger badge", () => {
+      mockIntegrity({
+        data: {
+          path: file.path,
+          level: "Quick",
+          healthy: false,
+          error_count: 3,
+          sample_errors: [],
+        },
+      } as Partial<ReturnType<typeof useIntegrity>>);
+      render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
+      expect(screen.getByText("Defekt")).toBeInTheDocument();
+    });
+
+    it("shows no defect badge for a healthy file", () => {
+      mockIntegrity({
+        data: { path: file.path, level: "Quick", healthy: true, error_count: 0, sample_errors: [] },
+      } as Partial<ReturnType<typeof useIntegrity>>);
+      render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
+      expect(screen.queryByText("Defekt")).toBeNull();
+    });
+
+    it("shows no defect badge before the check has resolved", () => {
+      mockIntegrity({ data: undefined, isPending: true } as Partial<
+        ReturnType<typeof useIntegrity>
+      >);
+      render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
+      expect(screen.queryByText("Defekt")).toBeNull();
+    });
   });
 
   it("shows a small inline error instead of crashing when the probe fails", () => {

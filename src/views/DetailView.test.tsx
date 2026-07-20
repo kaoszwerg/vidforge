@@ -6,6 +6,9 @@ vi.mock("../hooks/useProbe", () => ({ useProbe: vi.fn() }));
 vi.mock("../hooks/useSettings", () => ({ useSettings: vi.fn(), useUpdateSettings: vi.fn() }));
 vi.mock("../hooks/useJobs", () => ({ usePresets: vi.fn(), useEnqueueJob: vi.fn() }));
 vi.mock("../hooks/usePreparePlayer", () => ({ usePreparePlayer: vi.fn() }));
+// The integrity panel has its own tests (IntegrityPanel.test.tsx); stub it here so DetailView's tests
+// don't need to drive its ffmpeg-backed check.
+vi.mock("../components/IntegrityPanel", () => ({ IntegrityPanel: () => null }));
 
 import { useProbe } from "../hooks/useProbe";
 import { useSettings } from "../hooks/useSettings";

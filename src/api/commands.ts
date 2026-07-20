@@ -7,6 +7,7 @@ import type { CustomEncode } from "../bindings/CustomEncode";
 import type { DirEntry } from "../bindings/DirEntry";
 import type { FfmpegStatus } from "../bindings/FfmpegStatus";
 import type { FsRoot } from "../bindings/FsRoot";
+import type { IntegrityReport } from "../bindings/IntegrityReport";
 import type { JobDto } from "../bindings/JobDto";
 import type { LogRecord } from "../bindings/LogRecord";
 import type { MediaInfo } from "../bindings/MediaInfo";
@@ -95,6 +96,13 @@ export const api = {
    * (`usePreparePlayer`); may reject if ffmpeg is unavailable or preparation fails.
    */
   preparePlayer: (path: string) => invoke<PreparedPlayback>("prepare_player", { path }),
+  /**
+   * Check one file for defects (ADR-PROJ-001). `deep=false` (default) is the fast container/packet check
+   * run automatically per card; `deep=true` fully decodes the stream (on-demand, slow). A *defective*
+   * file resolves to a report with `healthy: false` — it rejects only if ffmpeg can't run.
+   */
+  checkIntegrity: (path: string, deep = false) =>
+    invoke<IntegrityReport>("check_integrity", { path, deep }),
   /**
    * The in-app HUD folder browser's starting points (ADR-PROJ-001): the standard user directories that
    * resolve on this OS plus the mounted drives/volumes. Read-only. Replaces the OS-native picker

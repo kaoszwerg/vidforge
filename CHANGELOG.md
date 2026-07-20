@@ -64,6 +64,12 @@ All notable changes to this project are documented here. The format follows
   audio — is now played **directly from its original file**, with no ffmpeg run, no cache copy and no
   "preparing" wait; the command grants the asset scope just that one file. Only a source the webview
   cannot play (foreign container or codec) is still remuxed/transcoded into the cache. Nothing autoplays.
+- **Video integrity checking** (ADR-PROJ-001): each card runs a fast **quick** check (container/packets)
+  automatically as it appears and flags a defective file with a red danger badge and red card border; the
+  Detail view's **Integrity panel** shows the verdict, offers a thorough **deep** check (full decode,
+  on-demand) and points at the existing **Repair** for a bad file. New read-only `check_integrity` command
+  (quick = `-c copy -f null`, deep = `-f null` to the null muxer — never writes; a defect is a reported
+  result, not a crash). Bulk checking is the next increment.
 - **In-app HUD folder browser** replacing the OS-native picker (owner decision): a two-column `Dialog` — a
   lazy, expandable directory **tree** on the left (standard user dirs + drives as roots) and the selected
   folder's sub**folders** on the right, with a clickable breadcrumb and a "Choose this folder" action.

@@ -65,6 +65,7 @@ pub fn run() {
             commands::media::probe_media,
             commands::media::get_thumbnail,
             commands::media::prepare_player,
+            commands::media::check_integrity,
             commands::jobs::list_presets,
             commands::jobs::enqueue_job,
             commands::jobs::cancel_job,

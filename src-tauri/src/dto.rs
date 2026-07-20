@@ -307,6 +307,32 @@ pub struct FsRoot {
     pub kind: RootKind,
 }
 
+/// How thorough an integrity check was (ADR-PROJ-001). `Quick` copies packets to a null muxer — it
+/// catches container/header/packet damage in seconds; `Deep` fully decodes every frame — it also catches
+/// corruption inside the stream, but takes roughly as long as the video is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub enum IntegrityLevel {
+    Quick,
+    Deep,
+}
+
+/// The result of checking one video for defects (ADR-PROJ-001). `healthy` is the headline; `sample_errors`
+/// carries the first few ffmpeg error lines so the UI can show *why* a file is flagged and offer repair.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct IntegrityReport {
+    pub path: String,
+    /// Which check produced this result.
+    pub level: IntegrityLevel,
+    /// True when ffmpeg reported no errors and exited cleanly.
+    pub healthy: bool,
+    /// Number of error lines observed (capped — see `sample_errors`).
+    pub error_count: u32,
+    /// The first handful of ffmpeg `error`-level lines, for display. Truncated when there are many.
+    pub sample_errors: Vec<String>,
+}
+
 fn default_ui_scale() -> f64 {
     1.0
 }

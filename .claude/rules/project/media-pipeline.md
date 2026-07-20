@@ -32,6 +32,9 @@ triggers:
     browse,
     folder,
     picker,
+    integrity,
+    defect,
+    check,
   ]
 applies-to:
   [
@@ -73,6 +76,11 @@ checklist an agent touching the pipeline must honour.
   / `browse_dir` (`src-tauri/src/browse/`) are **read-only** directory listings — folder names only, never
   file contents, never a write; the `FolderBrowser` HUD `Dialog` drives them. There is no `tauri-plugin-dialog`
   and no native picker — do not reintroduce one. The chosen path still goes through `scan_folder`'s validation.
+- **Integrity checking is read-only** (`src-tauri/src/media/integrity.rs`, `check_integrity`): ffmpeg decodes
+  to the **null muxer** — *quick* (`-c copy -f null`, container/packets, run automatically per card) or *deep*
+  (`-f null`, full decode, on-demand). It never writes. A defective file is a normal reported result
+  (`healthy: false`, with sample errors), flagged on the card and in the Detail view's `IntegrityPanel`, where
+  the existing **Repair** is offered — never a crash on a bad file (ADR-CORE-037).
 - **Jobs never die silently.** Queue workers are registered in `crash-boundaries.json` (ADR-APP-032) with how
   they die; a single job's failure becomes `JobStatus::Failed`, is logged and emitted, and the worker
   continues. Progress comes from `ffmpeg -progress pipe:1`.
