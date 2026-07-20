@@ -60,6 +60,10 @@ All notable changes to this project are documented here. The format follows
   accent as the corner quality badge (e.g. green "1080P", gold "720P") and the codec in cyan — with the
   exact dimensions, duration (gold, clock icon) and size (drive icon) demoted to a secondary line, so the
   key facts are scannable at a glance. The search field gained a clear button.
+- Player: a source the webview can play as-is — an `.mp4`/`.mov`/`.m4v` holding H.264 with AAC/MP3 (or no)
+  audio — is now played **directly from its original file**, with no ffmpeg run, no cache copy and no
+  "preparing" wait; the command grants the asset scope just that one file. Only a source the webview
+  cannot play (foreign container or codec) is still remuxed/transcoded into the cache. Nothing autoplays.
 
 ### Fixed
 

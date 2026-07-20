@@ -31,6 +31,7 @@ describe("usePreparePlayer", () => {
     vi.mocked(api.preparePlayer).mockResolvedValue({
       file_path: "/cache/vidforge/abc123.mp4",
       transcoded: false,
+      direct: false,
     });
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
@@ -53,6 +54,7 @@ describe("usePreparePlayer", () => {
     vi.mocked(api.preparePlayer).mockResolvedValue({
       file_path: "/cache/vidforge/def456.mp4",
       transcoded: true,
+      direct: false,
     });
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
@@ -61,6 +63,26 @@ describe("usePreparePlayer", () => {
     });
 
     await waitFor(() => expect(result.current.source?.transcoded).toBe(true));
+  });
+
+  it("plays a directly-playable source from its original path (backend returned it untouched)", async () => {
+    // The backend short-circuits a web-playable source: `file_path` is the ORIGINAL, not a cache copy.
+    // The hook doesn't care which it is — it turns whatever `file_path` came back into the asset URL — so
+    // this pins that a direct source plays from its own path with no cache path involved.
+    vi.mocked(api.preparePlayer).mockResolvedValue({
+      file_path: "/videos/original.mp4",
+      transcoded: false,
+      direct: true,
+    });
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    const { result } = renderHook(() => usePreparePlayer("/videos/original.mp4"), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await waitFor(() => expect(result.current.source).toBeDefined());
+    expect(convertFileSrc).toHaveBeenCalledWith("/videos/original.mp4");
+    expect(result.current.source?.srcUrl).toBe("asset://localhost//videos/original.mp4");
   });
 
   it("surfaces a rejected preparation as an error", async () => {

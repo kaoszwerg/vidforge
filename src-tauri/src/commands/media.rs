@@ -55,19 +55,35 @@ pub async fn get_thumbnail(
         .await
 }
 
-/// Prepare a source for the internal player: remux a web-friendly source (or transcode others) into a
-/// cached, webview-playable MP4 (ADR-PROJ-001 §5). Returns the cache path for `convertFileSrc`.
+/// Prepare a source for the internal player (ADR-PROJ-001 §5). A source the webview can play as-is is
+/// returned **directly** (no ffmpeg) and this command grants the asset scope that one file; otherwise a
+/// web-friendly source is remuxed (or others transcoded) into a cached MP4. Either way the returned
+/// `file_path` is what the frontend feeds to `convertFileSrc`.
 #[tauri::command]
 pub async fn prepare_player(
     app: tauri::AppHandle,
     state: State<'_, AppState>,
     path: String,
 ) -> Result<PreparedPlayback> {
+    use tauri::Manager;
     tracing::info!(%path, "prepare_player");
     let ffmpeg = resolve_tool(&app, &state, "ffmpeg")?;
     let ffprobe = resolve_tool(&app, &state, "ffprobe")?;
     let cache = crate::media::player_cache_dir(&app)?;
-    crate::player::prepare(&ffmpeg, &ffprobe, &PathBuf::from(&path), &cache).await
+    let source = PathBuf::from(&path);
+    let prepared = crate::player::prepare(&ffmpeg, &ffprobe, &source, &cache).await?;
+    if prepared.direct {
+        // Grant the asset protocol read access to this one original file so `convertFileSrc` can serve it
+        // to the `<video>`. Least privilege (rule:security): a single file, and only one the user's own
+        // folder scan produced — the cache dir is already in the static scope, so only the direct path
+        // needs granting.
+        app.asset_protocol_scope()
+            .allow_file(&source)
+            .map_err(|e| {
+                AppError::Other(format!("could not grant player access to {path}: {e}"))
+            })?;
+    }
+    Ok(prepared)
 }
 
 /// Resolve `tool` (`"ffmpeg"`/`"ffprobe"`) to a path via discovery (settings override → managed → PATH →

@@ -1,6 +1,6 @@
 {
   "name": "vidforge",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "private": true,
   "type": "module",
   "description": "Point Vidforge at a folder and it lists every video as a card with a thumbnail and full technical metadata — resolution, container, video and audio codecs, bitrate, frame rate and more. Repair defective files and re-encode or convert between MP4, MKV and AVI, with a one-click visually-lossless MP4/H.264 default and fully configurable presets. Conversions run as non-blocking background jobs in a queue with live per-job progress, driven by a system-installed ffmpeg that Vidforge detects automatically.",

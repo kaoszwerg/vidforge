@@ -7,10 +7,17 @@
  */
 export type PreparedPlayback = { 
 /**
- * Absolute path (under the app cache) to an MP4 the webview can play.
+ * Absolute path the webview can play: the **original** file when `direct`, otherwise a prepared MP4
+ * under the app cache.
  */
 file_path: string, 
 /**
  * True if the source had to be transcoded (not just remuxed) to become playable.
  */
-transcoded: boolean, };
+transcoded: boolean, 
+/**
+ * True when the source is played **as-is** — a web container + codec the webview handles natively,
+ * so no ffmpeg ran and `file_path` is the original file (which the command then grants the asset
+ * scope). No copy, no wait (ADR-PROJ-001 §5).
+ */
+direct: boolean, };
