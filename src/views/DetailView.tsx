@@ -222,8 +222,10 @@ export function DetailView({ path, onBack }: DetailViewProps) {
                   >
                     {t("detail.convert")}
                   </Button>
+                  {/* Repair is a secondary, **non-destructive** action (it writes a new file, never
+                      touches the source), so it reads as a neutral ghost control beside the one green
+                      primary (Convert) — not gold, which signals caution the operation doesn't carry. */}
                   <Button
-                    accent="gold"
                     variant="ghost"
                     onClick={() => enqueue("repair")}
                     disabled={enqueueJob.isPending}

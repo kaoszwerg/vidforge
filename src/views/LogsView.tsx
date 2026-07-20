@@ -83,7 +83,9 @@ export function LogsView() {
           >
             {paused ? t("logs.paused") : t("logs.live")}
           </Button>
-          <Button onClick={clear} accent="danger" className="px-2.5 py-1 text-xs">
+          {/* Gold, not danger: clearing the in-memory log view discards diagnostics, not user data — a
+              caution, not a destructive/irreversible act (the rotating JSON log file on disk is untouched). */}
+          <Button onClick={clear} accent="gold" className="px-2.5 py-1 text-xs">
             {t("logs.clear")}
           </Button>
         </div>

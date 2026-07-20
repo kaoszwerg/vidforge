@@ -98,6 +98,9 @@ All notable changes to this project are documented here. The format follows
 - Library bulk-selection bar: the Preset select (which carries a label above its trigger) and the
   Convert button now share one baseline (`items-end`), so the button no longer sits above the select's
   trigger next to it.
+- Button signal colours match their purpose: "Repair" is a **neutral** secondary (it is non-destructive —
+  it writes a new file, never the source), not gold; and "clear logs" is **gold** (a caution), not danger,
+  since it discards in-memory diagnostics, not user data. (green = confirm, danger = destructive.)
 
 ### Removed
 
