@@ -162,7 +162,10 @@ function ReadyPlayer({
               step={0.05}
               onChange={onVolumeChange}
               ariaLabel={t("player.volume")}
-              className="w-20"
+              /* Hidden below `sm`: at narrow widths the seek bar (the control that actually matters) must
+                 keep its width — the volume slider is the one to give up its space first, while the mute
+                 IconButton stays available regardless of width. */
+              className="hidden w-20 sm:block"
             />
 
             <IconButton

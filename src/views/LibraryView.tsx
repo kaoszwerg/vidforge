@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { AlertTriangle, Search } from "lucide-react";
 import { HudPanel } from "../components/ui/HudPanel";
 import { Dropzone } from "../components/ui/Dropzone";
 import { MetaRow } from "../components/ui/MetaRow";
@@ -252,7 +252,7 @@ export function LibraryView() {
 
   return (
     <div className="h-full space-y-4 overflow-auto p-6">
-      <Dropzone onFolderDropped={setFolder} onBrowse={handleBrowse}>
+      <Dropzone onFolderDropped={setFolder} onBrowse={handleBrowse} compact={folder != null}>
         <p className="text-dim truncate text-sm">{folder ?? t("library.dropzone.label")}</p>
       </Dropzone>
 
@@ -278,14 +278,27 @@ export function LibraryView() {
       ) : null}
 
       {scan.data && scan.data.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <TextField
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("library.toolbar.searchPlaceholder")}
-            aria-label={t("library.toolbar.searchAriaLabel")}
-            className="w-40"
-          />
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-col gap-1.5">
+            <span className="hud-label" style={{ "--hud-label-size": "0.7rem" } as CSSProperties}>
+              {t("library.toolbar.searchLabel")}
+            </span>
+            <div className="relative">
+              <Search
+                size={12}
+                strokeWidth={2}
+                className="text-dim pointer-events-none absolute top-1/2 left-2 -translate-y-1/2"
+                aria-hidden
+              />
+              <TextField
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("library.toolbar.searchPlaceholder")}
+                aria-label={t("library.toolbar.searchAriaLabel")}
+                className="w-40 pl-6"
+              />
+            </div>
+          </div>
           <Select
             label={t("library.toolbar.sortLabel")}
             value={sort}
@@ -352,7 +365,7 @@ export function LibraryView() {
       ) : null}
 
       {filteredFiles.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
           {filteredFiles.map((file) => (
             <VideoCard
               key={file.path}

@@ -47,6 +47,16 @@ All notable changes to this project are documented here. The format follows
   via the asset protocol; custom transport (play/pause, seek, volume/mute, fullscreen) with
   preparing/error states. New HUD `Slider` primitive.
 
+### Changed
+
+- UI/UX pass from a senior design review: the Detail view's metadata is now a capped ~320–400px inspector
+  (player pane grows), key→value pairs read as associated pairs (`MetaRow`), colour signals hierarchy
+  (File/Video/Audio panels cyan, only the Convert/Repair actions green), the filename renders in normal
+  case (not a label), the Dropzone collapses to a compact folder bar once a folder is loaded, the grid
+  follows container width (`auto-fill minmax`), each card's metadata is tiered/scannable with the quality
+  badge overlaid on the thumbnail, the player's volume slider yields at narrow widths, and loading states
+  show a spinner.
+
 ### Fixed
 
 - Fatal-screen crash path: `showFatal` now keeps the `QueryClientProvider`, so the localized `FatalScreen`

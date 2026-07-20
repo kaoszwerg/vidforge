@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { IconButton } from "../components/ui/IconButton";
 import { HudPanel } from "../components/ui/HudPanel";
 import { MetaRow } from "../components/ui/MetaRow";
@@ -82,10 +82,7 @@ export function DetailView({ path, onBack }: DetailViewProps) {
         <IconButton label={t("common.back")} onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft size={16} strokeWidth={2} />
         </IconButton>
-        <h1
-          className="hud-label text-glow-cyan min-w-0 truncate"
-          style={{ "--hud-label-size": "1rem" } as React.CSSProperties}
-        >
+        <h1 className="text-fg text-glow-cyan min-w-0 truncate text-lg font-medium tracking-tight">
           {name}
         </h1>
         {probe.data ? <QualityBadge tier={probe.data.quality} className="shrink-0" /> : null}
@@ -93,7 +90,10 @@ export function DetailView({ path, onBack }: DetailViewProps) {
 
       {probe.isPending ? (
         <HudPanel accent="cyan">
-          <p className="text-dim text-sm">{t("common.loading")}</p>
+          <p className="text-dim flex items-center gap-2 text-sm">
+            <Loader2 size={14} strokeWidth={2} className="animate-spin" aria-hidden />
+            {t("common.loading")}
+          </p>
         </HudPanel>
       ) : null}
 
@@ -104,14 +104,14 @@ export function DetailView({ path, onBack }: DetailViewProps) {
       ) : null}
 
       {probe.data ? (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
           <HudPanel accent="cyan" label={t("detail.panel.player")}>
             <VideoPlayer path={path} />
           </HudPanel>
 
           <div className="space-y-4">
             <HudPanel accent="cyan" label={t("detail.panel.file")}>
-              <dl className="text-dim grid grid-cols-2 gap-x-4 gap-y-1.5 font-mono text-xs">
+              <dl className="text-dim grid grid-cols-1 gap-x-4 gap-y-1.5 font-mono text-xs md:grid-cols-2">
                 <MetaRow k={t("detail.container")} v={probe.data.container} />
                 <MetaRow
                   k={t("detail.duration")}
@@ -130,8 +130,8 @@ export function DetailView({ path, onBack }: DetailViewProps) {
             </HudPanel>
 
             {probe.data.video ? (
-              <HudPanel accent="green" label={t("detail.panel.video")}>
-                <dl className="text-dim grid grid-cols-2 gap-x-4 gap-y-1.5 font-mono text-xs">
+              <HudPanel accent="cyan" label={t("detail.panel.video")}>
+                <dl className="text-dim grid grid-cols-1 gap-x-4 gap-y-1.5 font-mono text-xs md:grid-cols-2">
                   <MetaRow
                     k={t("detail.resolution")}
                     v={`${probe.data.video.width}×${probe.data.video.height}`}
@@ -156,12 +156,12 @@ export function DetailView({ path, onBack }: DetailViewProps) {
             ) : null}
 
             {probe.data.audio.length > 0 ? (
-              <HudPanel accent="purple" label={t("detail.panel.audio")}>
+              <HudPanel accent="cyan" label={t("detail.panel.audio")}>
                 <div className="divide-elevated space-y-2 divide-y">
                   {probe.data.audio.map((a, i) => (
                     <dl
                       key={`${a.codec}-${i}`}
-                      className="text-dim grid grid-cols-2 gap-x-4 gap-y-1.5 pt-2 font-mono text-xs first:pt-0"
+                      className="text-dim grid grid-cols-1 gap-x-4 gap-y-1.5 pt-2 font-mono text-xs first:pt-0 md:grid-cols-2"
                     >
                       <MetaRow k={t("detail.codec")} v={a.codec.toUpperCase()} />
                       <MetaRow k={t("detail.channels")} v={String(a.channels)} />
@@ -181,7 +181,7 @@ export function DetailView({ path, onBack }: DetailViewProps) {
             ) : null}
 
             {probe.data.subtitles.length > 0 ? (
-              <HudPanel accent="gold" label={t("detail.panel.subtitles")}>
+              <HudPanel accent="cyan" label={t("detail.panel.subtitles")}>
                 <ul className="text-dim space-y-1 text-sm">
                   {probe.data.subtitles.map((s, i) => (
                     <li key={`${s.codec}-${i}`}>

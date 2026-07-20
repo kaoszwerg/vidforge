@@ -101,4 +101,33 @@ describe("Dropzone", () => {
 
     await waitFor(() => expect(unlistenMock).toHaveBeenCalledOnce());
   });
+
+  describe("compact mode", () => {
+    it("renders a single-row bar with the current folder and a 'change folder' button", () => {
+      renderDropzone({ compact: true, children: <p>/home/user/videos</p> });
+      expect(screen.getByText("/home/user/videos")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Ordner wechseln" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Durchsuchen…" })).toBeNull();
+    });
+
+    it("calls onBrowse from the compact bar's change-folder button", () => {
+      const { onBrowse } = renderDropzone({ compact: true, children: <p>/videos</p> });
+      fireEvent.click(screen.getByRole("button", { name: "Ordner wechseln" }));
+      expect(onBrowse).toHaveBeenCalledOnce();
+    });
+
+    it("still subscribes to the window-wide drag-drop event in compact mode", async () => {
+      renderDropzone({ compact: true, children: <p>/videos</p> });
+      await waitFor(() => expect(onDragDropEventMock).toHaveBeenCalledTimes(1));
+    });
+
+    it("still reports a dropped folder while compact", async () => {
+      const { onFolderDropped } = renderDropzone({ compact: true, children: <p>/videos</p> });
+      await waitFor(() => expect(capturedHandler).toBeDefined());
+
+      capturedHandler?.({ payload: { type: "drop", paths: ["/videos/new"] } });
+
+      expect(onFolderDropped).toHaveBeenCalledWith("/videos/new");
+    });
+  });
 });

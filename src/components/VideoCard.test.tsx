@@ -127,9 +127,12 @@ describe("VideoCard", () => {
     expect(img).toHaveAttribute("src", "data:image/jpeg;base64,abc");
   });
 
-  it("shows the metadata loading label before the probe resolves", () => {
-    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
+  it("shows the metadata loading label (with a spinner) before the probe resolves", () => {
+    const { container } = render(
+      <VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />,
+    );
     expect(screen.getByText("Lädt…")).toBeInTheDocument();
+    expect(container.querySelector(".animate-spin")).not.toBeNull();
   });
 
   it("shows resolution, codec, duration, size and the quality badge once probed", () => {
@@ -140,6 +143,50 @@ describe("VideoCard", () => {
     expect(screen.getByText("1:15")).toBeInTheDocument();
     expect(screen.getByText("1.4 MB")).toBeInTheDocument();
     expect(screen.getByText("Gut")).toBeInTheDocument(); // QualityBadge label for "Good"
+  });
+
+  it("lifts the duration to the foreground colour while keeping the technical specs dim", () => {
+    mockProbe({ data: mediaInfo });
+    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
+    expect(screen.getByText("1:15").className).toContain("text-fg");
+  });
+
+  it("groups resolution+codec on one line and duration+size on another", () => {
+    mockProbe({ data: mediaInfo });
+    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
+    const specRow = screen.getByText("1920×1080").parentElement;
+    expect(specRow?.textContent).toBe("1920×1080·H264");
+    const statsRow = screen.getByText("1:15").parentElement;
+    expect(statsRow?.textContent).toBe("1:15·1.4 MB");
+    expect(specRow).not.toBe(statsRow);
+  });
+
+  it("clamps a long title to two lines instead of a single truncated line", () => {
+    mockProbe({ data: mediaInfo });
+    render(
+      <VideoCard
+        file={{ ...file, name: "a-very-long-and-descriptive-video-file-name.mp4" }}
+        onSelect={vi.fn()}
+        onToggleSelect={vi.fn()}
+      />,
+    );
+    const title = screen.getByText("a-very-long-and-descriptive-video-file-name.mp4");
+    expect(title.className).toContain("line-clamp-2");
+    expect(title.className).not.toContain("truncate");
+  });
+
+  it("overlays the quality badge on the thumbnail's top-right corner, mirroring the checkbox", () => {
+    mockProbe({ data: mediaInfo });
+    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
+    const badge = screen.getByText("Gut");
+    expect(badge.className).toContain("top-5");
+    expect(badge.className).toContain("right-5");
+
+    const checkboxLabel = screen
+      .getByRole("checkbox", { name: "„a.mp4“ auswählen" })
+      .closest("label");
+    expect(checkboxLabel?.className).toContain("top-5");
+    expect(checkboxLabel?.className).toContain("left-5");
   });
 
   it("shows a small inline error instead of crashing when the probe fails", () => {

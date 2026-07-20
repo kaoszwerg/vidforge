@@ -101,6 +101,14 @@ describe("DetailView", () => {
     expect(screen.getByText("Trip to the Coast.mp4")).toBeInTheDocument();
   });
 
+  it("renders the title as content (normal case), not a hud-label", () => {
+    mockProbe({ data: mediaInfo });
+    render(<DetailView path={PATH} onBack={vi.fn()} />);
+    const title = screen.getByText("Trip to the Coast.mp4");
+    expect(title.tagName).toBe("H1");
+    expect(title.className).not.toContain("hud-label");
+  });
+
   it("calls onBack when the back control is activated", () => {
     const onBack = vi.fn();
     render(<DetailView path={PATH} onBack={onBack} />);
@@ -108,10 +116,11 @@ describe("DetailView", () => {
     expect(onBack).toHaveBeenCalledOnce();
   });
 
-  it("shows a loading state while the probe is pending", () => {
+  it("shows a loading state (with a spinner) while the probe is pending", () => {
     mockProbe({ isPending: true });
-    render(<DetailView path={PATH} onBack={vi.fn()} />);
+    const { container } = render(<DetailView path={PATH} onBack={vi.fn()} />);
     expect(screen.getByText("Lädt…")).toBeInTheDocument();
+    expect(container.querySelector(".animate-spin")).not.toBeNull();
   });
 
   it("shows an error state instead of crashing when the probe fails", () => {
@@ -169,6 +178,29 @@ describe("DetailView", () => {
     // While preparing, VideoPlayer shows its own loading text (VideoPlayer.test.tsx covers its states
     // in full) — asserting it here pins that DetailView actually renders VideoPlayer, not a placeholder.
     expect(screen.getByText("Vorschau wird vorbereitet…")).toBeInTheDocument();
+  });
+
+  it("gives every metadata panel the cyan accent and reserves green for Actions alone", () => {
+    mockProbe({ data: mediaInfo });
+    const { container } = render(<DetailView path={PATH} onBack={vi.fn()} />);
+
+    const accentOf = (labelText: string) =>
+      screen.getByText(labelText).closest(".hud-panel")?.className ?? "";
+
+    expect(accentOf("Datei")).toContain("hud-accent-cyan");
+    expect(accentOf("Video")).toContain("hud-accent-cyan");
+    expect(accentOf("Audio")).toContain("hud-accent-cyan");
+    expect(accentOf("Untertitel")).toContain("hud-accent-cyan");
+    expect(accentOf("Aktionen")).toContain("hud-accent-green");
+
+    // Actions is the ONLY green-accented panel — the one thing that "lights up".
+    expect(container.querySelectorAll(".hud-panel.hud-accent-green")).toHaveLength(1);
+  });
+
+  it("caps the metadata rail's width instead of stretching it against the player", () => {
+    mockProbe({ data: mediaInfo });
+    const { container } = render(<DetailView path={PATH} onBack={vi.fn()} />);
+    expect(container.innerHTML).toContain("lg:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]");
   });
 
   describe("Convert/Repair actions", () => {

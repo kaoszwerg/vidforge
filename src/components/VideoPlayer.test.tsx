@@ -152,6 +152,17 @@ describe("VideoPlayer", () => {
     expect(await screen.findByText("0:42")).toBeInTheDocument();
   });
 
+  it("hides the volume slider below the sm breakpoint but keeps the mute button", async () => {
+    mockPlayer({ isPending: false, source: READY_SOURCE });
+    renderPlayer();
+    const muteBtn = await screen.findByRole("button", { name: "Stummschalten" });
+    expect(muteBtn.className).not.toContain("hidden");
+
+    const volumeSlider = screen.getByRole("slider", { name: "Lautstärke" });
+    expect(volumeSlider.className).toContain("hidden");
+    expect(volumeSlider.className).toContain("sm:block");
+  });
+
   it("mutes and unmutes via the mute button", async () => {
     mockPlayer({ isPending: false, source: READY_SOURCE });
     const { container } = renderPlayer();

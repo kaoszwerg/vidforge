@@ -52,12 +52,15 @@ vi.mock("../components/ui/Dropzone", () => ({
     onFolderDropped,
     onBrowse,
     children,
+    compact,
   }: {
     onFolderDropped: (p: string) => void;
     onBrowse: () => void;
     children?: ReactNode;
+    compact?: boolean;
   }) => (
     <div>
+      <span>{compact ? "dropzone:compact" : "dropzone:full"}</span>
       <button onClick={onBrowse}>browse-stub</button>
       <button onClick={() => onFolderDropped("/dropped")}>drop-stub</button>
       {children}
@@ -311,6 +314,17 @@ describe("LibraryView", () => {
     expect(screen.getByText("/videos")).toBeInTheDocument();
   });
 
+  it("keeps the big first-run Dropzone target while no folder is chosen", () => {
+    render(<LibraryView />);
+    expect(screen.getByText("dropzone:full")).toBeInTheDocument();
+  });
+
+  it("collapses the Dropzone to its compact bar once a folder is loaded", () => {
+    mockStore({ folder: "/videos", selectedPath: null });
+    render(<LibraryView />);
+    expect(screen.getByText("dropzone:compact")).toBeInTheDocument();
+  });
+
   it("calls setFolder when the Dropzone reports a dropped folder", () => {
     render(<LibraryView />);
     fireEvent.click(screen.getByRole("button", { name: "drop-stub" }));
@@ -372,6 +386,15 @@ describe("LibraryView", () => {
     expect(screen.getByRole("button", { name: "card:b.mkv" })).toBeInTheDocument();
   });
 
+  it("sizes the grid off the container's own width, not fixed viewport breakpoints", () => {
+    mockStore({ folder: "/videos", selectedPath: null });
+    mockScan({
+      data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }],
+    });
+    const { container } = render(<LibraryView />);
+    expect(container.innerHTML).toContain("grid-cols-[repeat(auto-fill,minmax(220px,1fr))]");
+  });
+
   it("calls onToggleSelect (toggleSelected) when a card's checkbox stub is clicked", () => {
     mockStore({ folder: "/videos", selectedPath: null });
     mockScan({ data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }] });
@@ -394,6 +417,13 @@ describe("LibraryView", () => {
       mockScan({ data: [] });
       render(<LibraryView />);
       expect(screen.queryByRole("textbox", { name: "Bibliothek durchsuchen" })).toBeNull();
+    });
+
+    it("shows a visible label above the search field, matching the Select controls' baseline", () => {
+      mockStore({ folder: "/videos", selectedPath: null });
+      mockScan({ data: THREE_FILES });
+      render(<LibraryView />);
+      expect(screen.getByText("Suche")).toBeInTheDocument();
     });
 
     it("shows every card, sorted by name ascending by default", () => {

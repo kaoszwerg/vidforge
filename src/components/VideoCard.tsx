@@ -1,4 +1,4 @@
-import { AlertTriangle, Film } from "lucide-react";
+import { AlertTriangle, Film, Loader2 } from "lucide-react";
 import type { MouseEvent } from "react";
 import { Button } from "./ui/Button";
 import { Checkbox } from "./ui/Checkbox";
@@ -48,7 +48,11 @@ export interface VideoCardProps {
  * descendant of it — nesting a native interactive control inside a `<button>` is invalid HTML (the
  * parser would split the button), so the two sit side by side in a `relative` wrapper instead, with the
  * checkbox stacked above via `z-10`. That also means a click on it never reaches the button underneath
- * by simple DOM hit-testing; `stopPropagation` in the change handler is a defensive second guard.
+ * by simple DOM hit-testing; `stopPropagation` in the change handler is a defensive second guard. The
+ * `QualityBadge` mirrors this at the thumbnail's top-**right** corner — it carries no interaction of its
+ * own, so it does not strictly need to sit outside the button, but placing it at the same outer level
+ * with the same inset keeps the two overlays pixel-aligned and frees the title row below for the file
+ * name alone.
  */
 export function VideoCard({ file, onSelect, onToggleSelect, selected = false }: VideoCardProps) {
   const t = useT();
@@ -71,6 +75,11 @@ export function VideoCard({ file, onSelect, onToggleSelect, selected = false }: 
         className="absolute top-5 left-5 z-10"
         onClick={(e) => e.stopPropagation()}
       />
+      {probe.data ? (
+        // Mirrors the checkbox's inset at the opposite corner (see the component doc comment) — same
+        // top offset, same distance from the edge, so the two overlays read as one consistent system.
+        <QualityBadge tier={probe.data.quality} className="absolute top-5 right-5 z-10" />
+      ) : null}
       <Button
         variant="ghost"
         onClick={handleClick}
@@ -93,22 +102,25 @@ export function VideoCard({ file, onSelect, onToggleSelect, selected = false }: 
               )}
             </div>
 
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-fg truncate text-sm">{file.name}</span>
-              {probe.data ? <QualityBadge tier={probe.data.quality} className="shrink-0" /> : null}
-            </div>
+            <span className="text-fg line-clamp-2 text-sm">{file.name}</span>
 
-            <div className="text-dim flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[11px]">
+            <div className="text-dim flex flex-col gap-0.5 font-mono text-[11px]">
               {probe.data ? (
                 <>
                   {probe.data.video ? (
-                    <span>
-                      {probe.data.video.width}×{probe.data.video.height}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span>
+                        {probe.data.video.width}×{probe.data.video.height}
+                      </span>
+                      <span className="text-dim/50">·</span>
+                      <span>{probe.data.video.codec.toUpperCase()}</span>
+                    </div>
                   ) : null}
-                  {probe.data.video ? <span>{probe.data.video.codec.toUpperCase()}</span> : null}
-                  <span>{formatDuration(probe.data.duration_secs ?? 0)}</span>
-                  <span>{formatBytes(file.size_bytes)}</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-fg">{formatDuration(probe.data.duration_secs ?? 0)}</span>
+                    <span className="text-dim/50">·</span>
+                    <span>{formatBytes(file.size_bytes)}</span>
+                  </div>
                 </>
               ) : probe.isError ? (
                 <span className="text-danger flex items-center gap-1">
@@ -116,7 +128,10 @@ export function VideoCard({ file, onSelect, onToggleSelect, selected = false }: 
                   {t("library.card.probeError", { message: errorMessage(probe.error) })}
                 </span>
               ) : (
-                <span>{t("common.loading")}</span>
+                <span className="flex items-center gap-1.5">
+                  <Loader2 size={11} strokeWidth={2} className="animate-spin" aria-hidden />
+                  {t("common.loading")}
+                </span>
               )}
             </div>
           </div>

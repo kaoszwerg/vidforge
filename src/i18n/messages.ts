@@ -41,6 +41,7 @@ export const de = {
   // LibraryView.
   "library.dropzone.label": "Ordner hierher ziehen oder durchsuchen",
   "library.dropzone.browse": "Durchsuchen…",
+  "library.dropzone.changeFolder": "Ordner wechseln",
   "library.scanning": "Scanne Ordner…",
   "library.empty": "Keine Videos in diesem Ordner gefunden.",
   "library.scanError.title": "Scan fehlgeschlagen",
@@ -53,6 +54,7 @@ export const de = {
   "library.selectConvert": "Ausgewählte konvertieren",
   "library.selectClear": "Auswahl aufheben",
   "library.noMatches": "Keine Treffer für die aktuelle Suche oder den gewählten Filter.",
+  "library.toolbar.searchLabel": "Suche",
   "library.toolbar.searchPlaceholder": "suchen…",
   "library.toolbar.searchAriaLabel": "Bibliothek durchsuchen",
   "library.toolbar.sortLabel": "Sortieren",
@@ -255,6 +257,7 @@ export const en: Record<MessageKey, string> = {
 
   "library.dropzone.label": "Drop a folder here or browse to select one",
   "library.dropzone.browse": "Browse…",
+  "library.dropzone.changeFolder": "Change folder",
   "library.scanning": "Scanning folder…",
   "library.empty": "No videos found in this folder.",
   "library.scanError.title": "Scan failed",
@@ -267,6 +270,7 @@ export const en: Record<MessageKey, string> = {
   "library.selectConvert": "Convert selected",
   "library.selectClear": "Clear selection",
   "library.noMatches": "No matches for the current search or filter.",
+  "library.toolbar.searchLabel": "Search",
   "library.toolbar.searchPlaceholder": "search…",
   "library.toolbar.searchAriaLabel": "Search library",
   "library.toolbar.sortLabel": "Sort",

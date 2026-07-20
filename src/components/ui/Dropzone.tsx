@@ -16,6 +16,12 @@ export interface DropzoneProps {
   className?: string;
   /** Custom label content. Defaults to a short instructional line. */
   children?: ReactNode;
+  /** Collapse the big drop target into a single-row bar (current folder + a small "change folder"
+   * button) once a folder is loaded and its grid/empty/scan-result state is already showing below —
+   * the large `p-8` target only earns its space before that, on the first-run/empty state. The
+   * window-wide drag-drop listener (below) stays subscribed either way, so dropping a new folder
+   * anywhere in the window keeps working in both modes. */
+  compact?: boolean;
 }
 
 /**
@@ -33,6 +39,10 @@ export interface DropzoneProps {
  *
  * A `Browse` HUD button (the OS-native folder dialog — the one documented native-surface exception,
  * ADR-APP-026 §3 / ADR-PROJ-001) is offered alongside the drop target via `onBrowse`.
+ *
+ * `compact` swaps the large `p-8` invitation for a slim single-row bar once there is already content
+ * below it to invite attention to — the same `onFolderDropped`/`onBrowse` wiring, just a smaller visual
+ * footprint (LibraryView's grid/empty/scan-error states).
  */
 export function Dropzone({
   onFolderDropped,
@@ -40,6 +50,7 @@ export function Dropzone({
   accent = "cyan",
   className = "",
   children,
+  compact = false,
 }: DropzoneProps) {
   const [dragActive, setDragActive] = useState(false);
   // The drag-drop listener is registered once (empty deps below) so it survives re-renders without
@@ -86,6 +97,34 @@ export function Dropzone({
       unlisten?.();
     };
   }, []);
+
+  if (compact) {
+    return (
+      <div
+        className={`hud-panel hud-clip-sm hud-accent-${accent} transition-shadow ${dragActive ? `neon-glow-${accent}` : ""} ${className}`.trim()}
+      >
+        <div className="relative z-[1] flex items-center gap-3 px-3 py-2">
+          <FolderOpen
+            size={16}
+            strokeWidth={1.5}
+            className={`shrink-0 ${hudAccentTextClass(accent)}`}
+            aria-hidden
+          />
+          <div className="min-w-0 flex-1">
+            {children ?? <p className="text-dim text-sm">{t("library.dropzone.label")}</p>}
+          </div>
+          <Button
+            accent={accent}
+            variant="ghost"
+            onClick={onBrowse}
+            className="shrink-0 px-2 py-1 text-xs"
+          >
+            {t("library.dropzone.changeFolder")}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
