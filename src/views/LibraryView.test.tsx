@@ -16,18 +16,25 @@ vi.mock("../components/VideoCard", () => ({
   VideoCard: ({
     file,
     onSelect,
+    onToggleSelect,
     selected,
   }: {
     file: { path: string; name: string };
     onSelect: (p: string, mods: SelectModifiers) => void;
+    onToggleSelect: (p: string) => void;
     selected?: boolean;
   }) => (
-    <button
-      aria-pressed={selected ?? false}
-      onClick={(e) => onSelect(file.path, { ctrl: e.ctrlKey, meta: e.metaKey, shift: e.shiftKey })}
-    >
-      {`card:${file.name}`}
-    </button>
+    <div>
+      <button
+        aria-pressed={selected ?? false}
+        onClick={(e) =>
+          onSelect(file.path, { ctrl: e.ctrlKey, meta: e.metaKey, shift: e.shiftKey })
+        }
+      >
+        {`card:${file.name}`}
+      </button>
+      <button onClick={() => onToggleSelect(file.path)}>{`toggle:${file.name}`}</button>
+    </div>
   ),
 }));
 
@@ -363,6 +370,107 @@ describe("LibraryView", () => {
     render(<LibraryView />);
     expect(screen.getByRole("button", { name: "card:a.mp4" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "card:b.mkv" })).toBeInTheDocument();
+  });
+
+  it("calls onToggleSelect (toggleSelected) when a card's checkbox stub is clicked", () => {
+    mockStore({ folder: "/videos", selectedPath: null });
+    mockScan({ data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }] });
+    render(<LibraryView />);
+
+    fireEvent.click(screen.getByRole("button", { name: "toggle:a.mp4" }));
+
+    expect(toggleSelected).toHaveBeenCalledWith("/videos/a.mp4");
+  });
+
+  describe("search/sort/filter toolbar", () => {
+    const THREE_FILES = [
+      { path: "/videos/b.mkv", name: "Beta.mkv", extension: "mkv", size_bytes: 300 },
+      { path: "/videos/a.mp4", name: "alpha.mp4", extension: "mp4", size_bytes: 100 },
+      { path: "/videos/c.mp4", name: "Charlie.mp4", extension: "mp4", size_bytes: 200 },
+    ];
+
+    it("is not shown when there are no scanned files", () => {
+      mockStore({ folder: "/videos", selectedPath: null });
+      mockScan({ data: [] });
+      render(<LibraryView />);
+      expect(screen.queryByRole("textbox", { name: "Bibliothek durchsuchen" })).toBeNull();
+    });
+
+    it("shows every card, sorted by name ascending by default", () => {
+      mockStore({ folder: "/videos", selectedPath: null });
+      mockScan({ data: THREE_FILES });
+      render(<LibraryView />);
+
+      const names = screen.getAllByRole("button", { name: /^card:/ }).map((el) => el.textContent);
+      expect(names).toEqual(["card:alpha.mp4", "card:Beta.mkv", "card:Charlie.mp4"]);
+    });
+
+    it("filters the grid by a case-insensitive name search", () => {
+      mockStore({ folder: "/videos", selectedPath: null });
+      mockScan({ data: THREE_FILES });
+      render(<LibraryView />);
+
+      fireEvent.change(screen.getByRole("textbox", { name: "Bibliothek durchsuchen" }), {
+        target: { value: "cha" },
+      });
+
+      expect(screen.getByRole("button", { name: "card:Charlie.mp4" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "card:alpha.mp4" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "card:Beta.mkv" })).toBeNull();
+    });
+
+    it("sorts by size descending when chosen", () => {
+      mockStore({ folder: "/videos", selectedPath: null });
+      mockScan({ data: THREE_FILES });
+      render(<LibraryView />);
+
+      fireEvent.click(screen.getByRole("combobox", { name: "Sortieren" }));
+      fireEvent.click(screen.getByRole("option", { name: "Größe ↓" }));
+
+      const names = screen.getAllByRole("button", { name: /^card:/ }).map((el) => el.textContent);
+      expect(names).toEqual(["card:Beta.mkv", "card:Charlie.mp4", "card:alpha.mp4"]);
+    });
+
+    it("offers an 'all' option plus every distinct extension present in the scan", () => {
+      mockStore({ folder: "/videos", selectedPath: null });
+      mockScan({ data: THREE_FILES });
+      render(<LibraryView />);
+
+      fireEvent.click(screen.getByRole("combobox", { name: "Dateityp" }));
+
+      expect(screen.getByRole("option", { name: "Alle" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "MKV" })).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: "MP4" })).toBeInTheDocument();
+    });
+
+    it("filters the grid by the chosen extension", () => {
+      mockStore({ folder: "/videos", selectedPath: null });
+      mockScan({ data: THREE_FILES });
+      render(<LibraryView />);
+
+      fireEvent.click(screen.getByRole("combobox", { name: "Dateityp" }));
+      fireEvent.click(screen.getByRole("option", { name: "MKV" }));
+
+      expect(screen.getByRole("button", { name: "card:Beta.mkv" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "card:alpha.mp4" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "card:Charlie.mp4" })).toBeNull();
+    });
+
+    it("shows a distinct 'no matches' message when a search/filter empties an otherwise non-empty scan", () => {
+      mockStore({ folder: "/videos", selectedPath: null });
+      mockScan({ data: THREE_FILES });
+      render(<LibraryView />);
+
+      fireEvent.change(screen.getByRole("textbox", { name: "Bibliothek durchsuchen" }), {
+        target: { value: "nonexistent" },
+      });
+
+      expect(
+        screen.getByText("Keine Treffer für die aktuelle Suche oder den gewählten Filter."),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Keine Videos in diesem Ordner gefunden.")).toBeNull();
+      expect(screen.queryByRole("button", { name: /^card:/ })).toBeNull();
+    });
   });
 
   it("a plain click narrows the selection to that card and opens the Detail view", () => {

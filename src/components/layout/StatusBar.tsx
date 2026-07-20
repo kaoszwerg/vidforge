@@ -24,7 +24,15 @@ export function StatusBar({
   const t = useT();
 
   return (
-    <div className="hud-strip hud-strip-bottom flex h-7 shrink-0 items-center justify-between px-3 font-mono text-[10px] text-[var(--saga-text-dim)]">
+    <div
+      // The strip sits flush against the window's bottom edge, which is chamfered ~20px at the
+      // bottom-right and ~10px at the bottom-left by `--hud-window-clip` (globals.css) — content
+      // closer than that to a corner is clipped by the window's own clip-path. `px-5` (20px) keeps
+      // both the About control (left) and the JobsIndicator (right) clear of either chamfer; the
+      // extra height + bottom padding gives the row's own content a further margin from the true
+      // bottom edge.
+      className="hud-strip hud-strip-bottom flex h-8 shrink-0 items-center justify-between px-5 pb-0.5 font-mono text-[10px] text-[var(--saga-text-dim)]"
+    >
       <Button
         variant="ghost"
         onClick={() => setAboutOpen(true)}

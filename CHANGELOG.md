@@ -48,3 +48,10 @@ All notable changes to this project are documented here. The format follows
 
 - Fatal-screen crash path: `showFatal` now keeps the `QueryClientProvider`, so the localized `FatalScreen`
   can read settings instead of throwing "No QueryClient set" on top of the crash it is reporting.
+- UI clipping at the frameless window's chamfered edges: the footer now clears the bottom corners, the
+  sidebar clears the top/bottom chamfers, the status-bar jobs popover clamps to the viewport (no overflow
+  at narrow widths), and unpadded HUD buttons no longer clip their own label/icon.
+- Detail view: the player now occupies the prominent left pane; the redundant thumbnail was removed.
+- Library multiselect: a discoverable **checkbox** overlays each card's thumbnail (was Ctrl/Shift-click
+  only); the file list gained **search, sort and extension filter**.
+- Tooltips flip above the trigger when there is no room below, so footer tooltips are no longer clipped.

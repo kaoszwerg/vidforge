@@ -59,13 +59,13 @@ describe("VideoCard", () => {
   });
 
   it("renders the file name as the card's accessible name", () => {
-    render(<VideoCard file={file} onSelect={vi.fn()} />);
+    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
     expect(screen.getByRole("button", { name: "a.mp4" })).toBeInTheDocument();
   });
 
   it("calls onSelect with the file path and no modifiers on a plain click", () => {
     const onSelect = vi.fn();
-    render(<VideoCard file={file} onSelect={onSelect} />);
+    render(<VideoCard file={file} onSelect={onSelect} onToggleSelect={vi.fn()} />);
     fireEvent.click(screen.getByRole("button", { name: "a.mp4" }));
     expect(onSelect).toHaveBeenCalledWith("/videos/a.mp4", {
       ctrl: false,
@@ -76,7 +76,7 @@ describe("VideoCard", () => {
 
   it("reports Ctrl/Cmd and Shift modifiers held during the click", () => {
     const onSelect = vi.fn();
-    render(<VideoCard file={file} onSelect={onSelect} />);
+    render(<VideoCard file={file} onSelect={onSelect} onToggleSelect={vi.fn()} />);
     const btn = screen.getByRole("button", { name: "a.mp4" });
 
     fireEvent.click(btn, { ctrlKey: true });
@@ -102,35 +102,39 @@ describe("VideoCard", () => {
   });
 
   it("is not marked selected by default", () => {
-    render(<VideoCard file={file} onSelect={vi.fn()} />);
+    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
     expect(screen.getByRole("button", { name: "a.mp4" })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("marks itself selected via aria-pressed", () => {
-    render(<VideoCard file={file} onSelect={vi.fn()} selected />);
+    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} selected />);
     expect(screen.getByRole("button", { name: "a.mp4" })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("shows no image while the thumbnail is still loading", () => {
-    const { container } = render(<VideoCard file={file} onSelect={vi.fn()} />);
+    const { container } = render(
+      <VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />,
+    );
     expect(container.querySelector("img")).toBeNull();
   });
 
   it("shows the thumbnail once loaded", () => {
     mockThumb({ data: "data:image/jpeg;base64,abc" });
-    const { container } = render(<VideoCard file={file} onSelect={vi.fn()} />);
+    const { container } = render(
+      <VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />,
+    );
     const img = container.querySelector("img");
     expect(img).toHaveAttribute("src", "data:image/jpeg;base64,abc");
   });
 
   it("shows the metadata loading label before the probe resolves", () => {
-    render(<VideoCard file={file} onSelect={vi.fn()} />);
+    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
     expect(screen.getByText("Lädt…")).toBeInTheDocument();
   });
 
   it("shows resolution, codec, duration, size and the quality badge once probed", () => {
     mockProbe({ data: mediaInfo });
-    render(<VideoCard file={file} onSelect={vi.fn()} />);
+    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
     expect(screen.getByText("1920×1080")).toBeInTheDocument();
     expect(screen.getByText("H264")).toBeInTheDocument();
     expect(screen.getByText("1:15")).toBeInTheDocument();
@@ -140,7 +144,7 @@ describe("VideoCard", () => {
 
   it("shows a small inline error instead of crashing when the probe fails", () => {
     mockProbe({ isError: true, error: new Error("ffprobe failed") });
-    render(<VideoCard file={file} onSelect={vi.fn()} />);
+    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
     expect(screen.getByText(/ffprobe failed/)).toBeInTheDocument();
     // The card itself is still there and clickable — a probe failure never takes the card down.
     expect(screen.getByRole("button", { name: "a.mp4" })).toBeInTheDocument();
@@ -148,8 +152,36 @@ describe("VideoCard", () => {
 
   it("omits resolution/codec when the probe found no video stream", () => {
     mockProbe({ data: { ...mediaInfo, video: null } });
-    render(<VideoCard file={file} onSelect={vi.fn()} />);
+    render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
     expect(screen.queryByText("1920×1080")).toBeNull();
     expect(screen.getByText("1:15")).toBeInTheDocument();
+  });
+
+  describe("bulk-select checkbox", () => {
+    it("renders a checkbox with the file's name as its accessible name", () => {
+      render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
+      expect(screen.getByRole("checkbox", { name: "„a.mp4“ auswählen" })).toBeInTheDocument();
+    });
+
+    it("reflects the selected prop as its checked state", () => {
+      render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} selected />);
+      expect(screen.getByRole("checkbox", { name: "„a.mp4“ auswählen" })).toBeChecked();
+    });
+
+    it("is unchecked when not selected", () => {
+      render(<VideoCard file={file} onSelect={vi.fn()} onToggleSelect={vi.fn()} />);
+      expect(screen.getByRole("checkbox", { name: "„a.mp4“ auswählen" })).not.toBeChecked();
+    });
+
+    it("calls onToggleSelect with the file's path when clicked, without opening the card", () => {
+      const onToggleSelect = vi.fn();
+      const onSelect = vi.fn();
+      render(<VideoCard file={file} onSelect={onSelect} onToggleSelect={onToggleSelect} />);
+
+      fireEvent.click(screen.getByRole("checkbox", { name: "„a.mp4“ auswählen" }));
+
+      expect(onToggleSelect).toHaveBeenCalledWith("/videos/a.mp4");
+      expect(onSelect).not.toHaveBeenCalled();
+    });
   });
 });

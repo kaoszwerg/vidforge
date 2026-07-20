@@ -2,13 +2,11 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DetailView } from "./DetailView";
 
-vi.mock("../hooks/useThumbnail", () => ({ useThumbnail: vi.fn() }));
 vi.mock("../hooks/useProbe", () => ({ useProbe: vi.fn() }));
 vi.mock("../hooks/useSettings", () => ({ useSettings: vi.fn(), useUpdateSettings: vi.fn() }));
 vi.mock("../hooks/useJobs", () => ({ usePresets: vi.fn(), useEnqueueJob: vi.fn() }));
 vi.mock("../hooks/usePreparePlayer", () => ({ usePreparePlayer: vi.fn() }));
 
-import { useThumbnail } from "../hooks/useThumbnail";
 import { useProbe } from "../hooks/useProbe";
 import { useSettings } from "../hooks/useSettings";
 import { usePresets, useEnqueueJob } from "../hooks/useJobs";
@@ -35,13 +33,6 @@ const mediaInfo = {
   subtitles: [{ codec: "subrip", language: "eng" }],
   quality: "Good" as const,
 };
-
-function mockThumb(overrides: Partial<ReturnType<typeof useThumbnail>> = {}) {
-  vi.mocked(useThumbnail).mockReturnValue({
-    data: undefined,
-    ...overrides,
-  } as ReturnType<typeof useThumbnail>);
-}
 
 function mockProbe(overrides: Partial<ReturnType<typeof useProbe>> = {}) {
   vi.mocked(useProbe).mockReturnValue({
@@ -97,7 +88,6 @@ describe("DetailView", () => {
     vi.mocked(useSettings).mockReturnValue({ data: { language: "de" } } as ReturnType<
       typeof useSettings
     >);
-    mockThumb();
     mockProbe();
     enqueueMutate.mockReset();
     mockPresets();
@@ -179,19 +169,6 @@ describe("DetailView", () => {
     // While preparing, VideoPlayer shows its own loading text (VideoPlayer.test.tsx covers its states
     // in full) — asserting it here pins that DetailView actually renders VideoPlayer, not a placeholder.
     expect(screen.getByText("Vorschau wird vorbereitet…")).toBeInTheDocument();
-  });
-
-  it("shows a thumbnail placeholder icon until the thumbnail loads", () => {
-    mockProbe({ data: mediaInfo });
-    const { container } = render(<DetailView path={PATH} onBack={vi.fn()} />);
-    expect(container.querySelector("img")).toBeNull();
-  });
-
-  it("shows the thumbnail once loaded", () => {
-    mockProbe({ data: mediaInfo });
-    mockThumb({ data: "data:image/jpeg;base64,abc" });
-    const { container } = render(<DetailView path={PATH} onBack={vi.fn()} />);
-    expect(container.querySelector("img")).toHaveAttribute("src", "data:image/jpeg;base64,abc");
   });
 
   describe("Convert/Repair actions", () => {

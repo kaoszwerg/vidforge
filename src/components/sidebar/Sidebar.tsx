@@ -24,7 +24,10 @@ export function Sidebar() {
 
   return (
     <nav
-      className="hud-strip flex w-14 shrink-0 flex-col items-center gap-1.5 py-2"
+      // `py-5` (20px) keeps the first/last nav buttons clear of the window's ~20px chamfered
+      // top-left/bottom-left corners (`--hud-window-clip`, globals.css) — the rail sits flush against
+      // the window's left edge, so its own top/bottom edge is what needs the clearance.
+      className="hud-strip flex w-14 shrink-0 flex-col items-center gap-1.5 py-5"
       style={{
         borderRight: "1px solid rgb(var(--saga-neon-cyan-rgb) / 0.3)",
         borderBottom: "none",

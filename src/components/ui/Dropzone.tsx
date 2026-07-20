@@ -99,7 +99,7 @@ export function Dropzone({
           aria-hidden
         />
         {children ?? <p className="text-dim text-sm">{t("library.dropzone.label")}</p>}
-        <Button accent={accent} onClick={onBrowse}>
+        <Button accent={accent} onClick={onBrowse} className="px-4 py-1.5 text-xs">
           {t("library.dropzone.browse")}
         </Button>
       </div>

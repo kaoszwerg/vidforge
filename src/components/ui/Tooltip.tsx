@@ -29,7 +29,7 @@ interface TriggerProps {
  */
 export function Tooltip({ content, children }: TooltipProps) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [pos, setPos] = useState({ top: 0, left: 0, above: false });
   const id = useId();
 
   useEffect(() => {
@@ -45,7 +45,15 @@ export function Tooltip({ content, children }: TooltipProps) {
 
   const show = (e: MouseEvent<Element> | FocusEvent<Element>) => {
     const r = e.currentTarget.getBoundingClientRect();
-    setPos({ top: r.bottom + 6, left: Math.round(r.left + r.width / 2) });
+    // Flip above the trigger when there isn't room below it (e.g. footer buttons), so the bubble is
+    // never pushed off the bottom of the window and clipped. `above` drives a -translate-y-full so the
+    // tooltip's bottom edge anchors at `top` (the trigger's top) instead of its top edge at the bottom.
+    const above = window.innerHeight - r.bottom < 56;
+    setPos({
+      top: above ? r.top - 6 : r.bottom + 6,
+      left: Math.round(r.left + r.width / 2),
+      above,
+    });
     setOpen(true);
   };
   const hide = () => setOpen(false);
@@ -79,7 +87,7 @@ export function Tooltip({ content, children }: TooltipProps) {
             <div
               role="tooltip"
               id={id}
-              className="hud-popover hud-clip-sm hud-accent-cyan text-fg pointer-events-none fixed z-[70] max-w-[240px] -translate-x-1/2 px-2 py-1 text-xs whitespace-nowrap"
+              className={`hud-popover hud-clip-sm hud-accent-cyan text-fg pointer-events-none fixed z-[70] max-w-[240px] -translate-x-1/2 px-2 py-1 text-xs whitespace-nowrap ${pos.above ? "-translate-y-full" : ""}`}
               style={{ top: pos.top, left: pos.left }}
             >
               {content}

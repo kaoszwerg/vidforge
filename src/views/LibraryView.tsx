@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { HudPanel } from "../components/ui/HudPanel";
 import { Dropzone } from "../components/ui/Dropzone";
 import { MetaRow } from "../components/ui/MetaRow";
 import { Select } from "../components/ui/Select";
+import { TextField } from "../components/ui/TextField";
 import { Button } from "../components/ui/Button";
 import { ProgressBar } from "../components/ui/ProgressBar";
 import { VideoCard, type SelectModifiers } from "../components/VideoCard";
@@ -17,6 +18,14 @@ import { useLibraryStore } from "../store/library";
 import { useT, type MessageKey } from "../i18n";
 import { errorMessage } from "../lib/errors";
 import { isConvertiblePreset, presetLabelKey } from "../lib/presets";
+import {
+  applyLibraryViewOptions,
+  libraryExtensions,
+  librarySortLabelKey,
+  LIBRARY_FILTER_ALL,
+  LIBRARY_SORT_ORDERS,
+  type LibrarySortOrder,
+} from "../lib/librarySort";
 
 /** `InstallProgress.phase` (download/verify/extract/install/done) to its label key. `"error"` is
  * handled separately (the failure message replaces the progress row entirely) — a phase this switch
@@ -53,8 +62,11 @@ function installPhaseLabelKey(phase: string): MessageKey {
  * single-click-to-open behavior is preserved rather than replaced by a distinct "open" affordance.
  * **Ctrl/Cmd-click** toggles a card's membership and **Shift-click** selects the range from the last
  * clicked card, neither of which navigates away — that is how a selection of more than one card is ever
- * built. **Ctrl/Cmd+A** selects every scanned file; **Escape** clears the selection. Both shortcuts are
- * only live while the grid itself is showing (not the Detail view).
+ * built. **Ctrl/Cmd+A** selects every currently *displayed* file (after the toolbar's search/filter, in
+ * its current sort order — never a file hidden by the current filter); **Escape** clears the selection.
+ * Both shortcuts are only live while the grid itself is showing (not the Detail view). A `Checkbox` on
+ * each card (`VideoCard`) is the primary, discoverable way to build a selection; the modifier-click
+ * mechanics above remain available for anyone who already reaches for them.
  */
 export function LibraryView() {
   const t = useT();
@@ -78,6 +90,29 @@ export function LibraryView() {
   const convertPresets = (presets.data ?? []).filter((p) => isConvertiblePreset(p.id));
   const [bulkPresetId, setBulkPresetId] = useState("universal");
 
+  // Search/sort/filter toolbar state (LibraryView, not the store — purely local view state, scoped to
+  // "what I'm currently looking for in this folder"). Reset when `folder` changes — adjusted during
+  // render (React's documented pattern for "reset state when a prop changes", not an effect: an effect
+  // that calls setState synchronously on every run is a cascading extra render,
+  // react-hooks/set-state-in-effect) — the same way the store already clears the selection on a new
+  // folder.
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<LibrarySortOrder>("name-asc");
+  const [extension, setExtension] = useState<string>(LIBRARY_FILTER_ALL);
+  const [resetForFolder, setResetForFolder] = useState(folder);
+  if (folder !== resetForFolder) {
+    setResetForFolder(folder);
+    setQuery("");
+    setExtension(LIBRARY_FILTER_ALL);
+  }
+
+  const scannedFiles = useMemo(() => scan.data ?? [], [scan.data]);
+  const extensions = useMemo(() => libraryExtensions(scannedFiles), [scannedFiles]);
+  const filteredFiles = useMemo(
+    () => applyLibraryViewOptions(scannedFiles, { query, extension, sort }),
+    [scannedFiles, query, extension, sort],
+  );
+
   const handleBrowse = () => {
     void api.pickFolder().then((picked) => {
       if (picked) setFolder(picked);
@@ -85,8 +120,11 @@ export function LibraryView() {
   };
 
   const handleCardSelect = (path: string, mods: SelectModifiers) => {
-    if (mods.shift && lastClickedPath && scan.data) {
-      const paths = scan.data.map((f) => f.path);
+    // Range/select-all operate over the currently *displayed* order (`filteredFiles`), not the raw
+    // scan — once the toolbar has searched/filtered/sorted, Shift-click and Ctrl+A must match what the
+    // user actually sees, or Ctrl+A would silently also select files hidden by the current filter.
+    if (mods.shift && lastClickedPath && filteredFiles.length > 0) {
+      const paths = filteredFiles.map((f) => f.path);
       const from = paths.indexOf(lastClickedPath);
       const to = paths.indexOf(path);
       if (from !== -1 && to !== -1) {
@@ -111,21 +149,22 @@ export function LibraryView() {
     clearSelection();
   };
 
-  // Ctrl/Cmd+A and Escape — only while the grid itself is shown, not the Detail view.
+  // Ctrl/Cmd+A and Escape — only while the grid itself is shown, not the Detail view. Ctrl/Cmd+A selects
+  // every currently *displayed* file (`filteredFiles`), matching the Shift-click range above.
   useEffect(() => {
     if (selectedPath) return;
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
-        if (!scan.data || scan.data.length === 0) return;
+        if (filteredFiles.length === 0) return;
         e.preventDefault();
-        setSelectedPaths(scan.data.map((f) => f.path));
+        setSelectedPaths(filteredFiles.map((f) => f.path));
       } else if (e.key === "Escape") {
         clearSelection();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedPath, scan.data, setSelectedPaths, clearSelection]);
+  }, [selectedPath, filteredFiles, setSelectedPaths, clearSelection]);
 
   if (selectedPath) {
     return <DetailView path={selectedPath} onBack={() => selectVideo(null)} />;
@@ -238,10 +277,40 @@ export function LibraryView() {
         </HudPanel>
       ) : null}
 
+      {scan.data && scan.data.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <TextField
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t("library.toolbar.searchPlaceholder")}
+            aria-label={t("library.toolbar.searchAriaLabel")}
+            className="w-40"
+          />
+          <Select
+            label={t("library.toolbar.sortLabel")}
+            value={sort}
+            onChange={setSort}
+            options={LIBRARY_SORT_ORDERS.map((order) => ({
+              value: order,
+              label: t(librarySortLabelKey(order)),
+            }))}
+          />
+          <Select
+            label={t("library.toolbar.filterLabel")}
+            value={extension}
+            onChange={setExtension}
+            options={[
+              { value: LIBRARY_FILTER_ALL, label: t("library.toolbar.filterAll") },
+              ...extensions.map((ext) => ({ value: ext, label: ext.toUpperCase() })),
+            ]}
+          />
+        </div>
+      ) : null}
+
       {selected.size > 0 ? (
         <HudPanel accent="green">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="text-fg text-sm">
                 {t("library.selectCount", { count: selected.size })}
               </span>
@@ -249,7 +318,7 @@ export function LibraryView() {
                 {t("library.selectClear")}
               </Button>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {presets.isPending ? (
                 <span className="text-dim text-xs">{t("common.loading")}</span>
               ) : (
@@ -267,6 +336,7 @@ export function LibraryView() {
                 accent="green"
                 onClick={handleBulkConvert}
                 disabled={enqueueJob.isPending || convertPresets.length === 0}
+                className="px-4 py-1.5 text-xs"
               >
                 {t("library.selectConvert")}
               </Button>
@@ -275,13 +345,20 @@ export function LibraryView() {
         </HudPanel>
       ) : null}
 
-      {scan.data && scan.data.length > 0 ? (
+      {scan.data && scan.data.length > 0 && filteredFiles.length === 0 ? (
+        <HudPanel accent="gold">
+          <p className="text-dim text-sm">{t("library.noMatches")}</p>
+        </HudPanel>
+      ) : null}
+
+      {filteredFiles.length > 0 ? (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {scan.data.map((file) => (
+          {filteredFiles.map((file) => (
             <VideoCard
               key={file.path}
               file={file}
               onSelect={handleCardSelect}
+              onToggleSelect={toggleSelected}
               selected={selected.has(file.path)}
             />
           ))}

@@ -48,9 +48,20 @@ export const de = {
   "library.ffmpegMissing.body":
     "Vidforge benötigt ffmpeg und ffprobe, um Videos zu scannen und abzuspielen. Installiere beide und starte die App neu, hinterlege den Pfad in den Einstellungen, oder installiere ffmpeg direkt über die Schaltfläche unten.",
   "library.card.probeError": "Metadaten konnten nicht gelesen werden: {message}",
+  "library.card.select": "„{name}“ auswählen",
   "library.selectCount": "{count} ausgewählt",
   "library.selectConvert": "Ausgewählte konvertieren",
   "library.selectClear": "Auswahl aufheben",
+  "library.noMatches": "Keine Treffer für die aktuelle Suche oder den gewählten Filter.",
+  "library.toolbar.searchPlaceholder": "suchen…",
+  "library.toolbar.searchAriaLabel": "Bibliothek durchsuchen",
+  "library.toolbar.sortLabel": "Sortieren",
+  "library.toolbar.sort.nameAsc": "Name A–Z",
+  "library.toolbar.sort.nameDesc": "Name Z–A",
+  "library.toolbar.sort.sizeAsc": "Größe ↑",
+  "library.toolbar.sort.sizeDesc": "Größe ↓",
+  "library.toolbar.filterLabel": "Dateityp",
+  "library.toolbar.filterAll": "Alle",
 
   // ffmpeg installer (LibraryView's ffmpeg-missing notice, ADR-PROJ-001 §2 — the one opt-in network
   // egress; the download source and SHA-256 verification are disclosed here per rule:privacy).
@@ -251,9 +262,20 @@ export const en: Record<MessageKey, string> = {
   "library.ffmpegMissing.body":
     "Vidforge needs ffmpeg and ffprobe to scan and play videos. Install both and restart the app, set the path in Settings, or install ffmpeg directly using the button below.",
   "library.card.probeError": "Could not read metadata: {message}",
+  "library.card.select": 'Select "{name}"',
   "library.selectCount": "{count} selected",
   "library.selectConvert": "Convert selected",
   "library.selectClear": "Clear selection",
+  "library.noMatches": "No matches for the current search or filter.",
+  "library.toolbar.searchPlaceholder": "search…",
+  "library.toolbar.searchAriaLabel": "Search library",
+  "library.toolbar.sortLabel": "Sort",
+  "library.toolbar.sort.nameAsc": "Name A–Z",
+  "library.toolbar.sort.nameDesc": "Name Z–A",
+  "library.toolbar.sort.sizeAsc": "Size ↑",
+  "library.toolbar.sort.sizeDesc": "Size ↓",
+  "library.toolbar.filterLabel": "File type",
+  "library.toolbar.filterAll": "All",
 
   "install.button": "Install ffmpeg",
   "install.explain":

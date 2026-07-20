@@ -7,6 +7,11 @@ import { ProgressBar } from "../ui/ProgressBar";
 import { hudAccentTextClass, type HudAccent } from "../ui/hudButton";
 import { useCancelJob, type UseJobsResult } from "../../hooks/useJobs";
 import { presetLabelKey } from "../../lib/presets";
+import {
+  computeJobsPopoverPosition,
+  POPOVER_WIDTH,
+  type JobsPopoverPosition,
+} from "../../lib/jobsPopoverPosition";
 import { useT } from "../../i18n";
 import type { MessageKey } from "../../i18n";
 import type { JobDto } from "../../bindings/JobDto";
@@ -93,7 +98,10 @@ function JobRow({ job }: { job: JobDto }) {
         ) : null}
       </div>
       <div className="text-dim flex items-center gap-2 pl-[18px] font-mono text-[10px]">
-        <span className="truncate">{t(presetLabelKey(job.preset_id))}</span>
+        {/* `min-w-0` is required alongside `flex-1` + `truncate`: a row flex item's min-width defaults
+            to its content's natural width, which silently defeats `overflow:hidden`/text-ellipsis for
+            anything wider than the popover — the same fix the job-name row above already carries. */}
+        <span className="min-w-0 flex-1 truncate">{t(presetLabelKey(job.preset_id))}</span>
         {job.state === "Running" ? (
           <span className="shrink-0">{Math.round(job.percent)}%</span>
         ) : null}
@@ -119,7 +127,11 @@ function JobRow({ job }: { job: JobDto }) {
 export function JobsIndicator({ jobs }: { jobs: UseJobsResult }) {
   const t = useT();
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ bottom: 0, right: 0 });
+  const [pos, setPos] = useState<JobsPopoverPosition>({
+    bottom: 0,
+    right: 0,
+    width: POPOVER_WIDTH,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -133,7 +145,12 @@ export function JobsIndicator({ jobs }: { jobs: UseJobsResult }) {
   const toggle = (e: MouseEvent<HTMLButtonElement>) => {
     if (!open) {
       const r = e.currentTarget.getBoundingClientRect();
-      setPos({ bottom: window.innerHeight - r.top + 6, right: window.innerWidth - r.right });
+      setPos(
+        computeJobsPopoverPosition(
+          { top: r.top, right: r.right },
+          { width: window.innerWidth, height: window.innerHeight },
+        ),
+      );
     }
     setOpen((o) => !o);
   };
@@ -179,8 +196,8 @@ export function JobsIndicator({ jobs }: { jobs: UseJobsResult }) {
               <div
                 role="dialog"
                 aria-label={t("jobs.popover.title")}
-                className="hud-popover hud-clip-sm hud-accent-cyan fixed z-[71] flex max-h-[70vh] w-80 flex-col overflow-hidden"
-                style={{ bottom: pos.bottom, right: pos.right }}
+                className="hud-popover hud-clip-sm hud-accent-cyan fixed z-[71] flex max-h-[70vh] flex-col overflow-hidden"
+                style={{ bottom: pos.bottom, right: pos.right, width: pos.width }}
               >
                 <div
                   className="hud-label shrink-0 px-3 py-2"

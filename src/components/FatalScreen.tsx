@@ -56,7 +56,11 @@ export function FatalScreen({ error, reportPath }: FatalScreenProps) {
             </p>
 
             <div className="flex gap-3">
-              <Button accent="cyan" onClick={() => window.location.reload()}>
+              <Button
+                accent="cyan"
+                onClick={() => window.location.reload()}
+                className="px-4 py-1.5 text-xs"
+              >
                 {t("fatal.restart")}
               </Button>
               <Button

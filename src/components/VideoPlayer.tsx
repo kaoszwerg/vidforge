@@ -119,7 +119,11 @@ function ReadyPlayer({
           </div>
 
           <div className="flex items-center gap-2">
-            <IconButton label={playing ? t("player.pause") : t("player.play")} onClick={togglePlay}>
+            <IconButton
+              label={playing ? t("player.pause") : t("player.play")}
+              onClick={togglePlay}
+              className="h-8 w-8 shrink-0"
+            >
               {playing ? <Pause size={14} strokeWidth={2} /> : <Play size={14} strokeWidth={2} />}
             </IconButton>
 
@@ -143,6 +147,7 @@ function ReadyPlayer({
             <IconButton
               label={muted ? t("player.unmute") : t("player.mute")}
               onClick={() => onMutedChange(!muted)}
+              className="h-8 w-8 shrink-0"
             >
               {muted || volume === 0 ? (
                 <VolumeX size={14} strokeWidth={2} />
@@ -160,7 +165,11 @@ function ReadyPlayer({
               className="w-20"
             />
 
-            <IconButton label={t("player.fullscreen")} onClick={toggleFullscreen}>
+            <IconButton
+              label={t("player.fullscreen")}
+              onClick={toggleFullscreen}
+              className="h-8 w-8 shrink-0"
+            >
               {fullscreen ? (
                 <Minimize size={14} strokeWidth={2} />
               ) : (

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Film } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { IconButton } from "../components/ui/IconButton";
 import { HudPanel } from "../components/ui/HudPanel";
 import { MetaRow } from "../components/ui/MetaRow";
@@ -8,7 +8,6 @@ import { Button } from "../components/ui/Button";
 import { QualityBadge } from "../components/QualityBadge";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { useProbe } from "../hooks/useProbe";
-import { useThumbnail } from "../hooks/useThumbnail";
 import { useEnqueueJob, usePresets } from "../hooks/useJobs";
 import { isConvertiblePreset, presetDescriptionKey, presetLabelKey } from "../lib/presets";
 import { useT } from "../i18n";
@@ -39,14 +38,14 @@ export interface DetailViewProps {
 
 /**
  * Full technical metadata for one video (ADR-PROJ-001): container/duration/size/bitrate, the video
- * stream, every audio stream, every subtitle track, the thumbnail, a back control, the internal
- * `VideoPlayer` and the Convert/Repair actions that queue a job (`useEnqueueJob`) without blocking this
- * view — the job then lives in the status-bar process list.
+ * stream, every audio stream, every subtitle track, a back control, the internal `VideoPlayer` — the
+ * prominent left column, since previewing the file is what a user actually does here — and the
+ * Convert/Repair actions that queue a job (`useEnqueueJob`) without blocking this view — the job then
+ * lives in the status-bar process list.
  */
 export function DetailView({ path, onBack }: DetailViewProps) {
   const t = useT();
   const probe = useProbe(path);
-  const thumb = useThumbnail(path);
   const name = fileNameFromPath(path);
 
   const presets = usePresets();
@@ -80,7 +79,7 @@ export function DetailView({ path, onBack }: DetailViewProps) {
   return (
     <div className="h-full space-y-4 overflow-auto p-6">
       <div className="flex items-center gap-3">
-        <IconButton label={t("common.back")} onClick={onBack}>
+        <IconButton label={t("common.back")} onClick={onBack} className="h-8 w-8 shrink-0">
           <ArrowLeft size={16} strokeWidth={2} />
         </IconButton>
         <h1
@@ -106,14 +105,8 @@ export function DetailView({ path, onBack }: DetailViewProps) {
 
       {probe.data ? (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
-          <HudPanel accent="cyan" className="overflow-hidden p-0">
-            <div className="bg-elevated flex aspect-video w-full items-center justify-center overflow-hidden">
-              {thumb.data ? (
-                <img src={thumb.data} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <Film size={40} className="text-dim" aria-hidden />
-              )}
-            </div>
+          <HudPanel accent="cyan" label={t("detail.panel.player")}>
+            <VideoPlayer path={path} />
           </HudPanel>
 
           <div className="space-y-4">
@@ -199,10 +192,6 @@ export function DetailView({ path, onBack }: DetailViewProps) {
               </HudPanel>
             ) : null}
 
-            <HudPanel accent="cyan" label={t("detail.panel.player")}>
-              <VideoPlayer path={path} />
-            </HudPanel>
-
             <HudPanel accent="green" label={t("detail.panel.actions")}>
               <div className="space-y-3">
                 {presets.isPending ? (
@@ -229,6 +218,7 @@ export function DetailView({ path, onBack }: DetailViewProps) {
                     accent="green"
                     onClick={() => enqueue(presetId)}
                     disabled={enqueueJob.isPending || convertPresets.length === 0}
+                    className="px-4 py-1.5 text-xs"
                   >
                     {t("detail.convert")}
                   </Button>
@@ -237,6 +227,7 @@ export function DetailView({ path, onBack }: DetailViewProps) {
                     variant="ghost"
                     onClick={() => enqueue("repair")}
                     disabled={enqueueJob.isPending}
+                    className="px-2.5 py-1.5 text-xs"
                   >
                     {t("detail.repair")}
                   </Button>

@@ -149,4 +149,36 @@ describe("JobsIndicator", () => {
     fireEvent.click(screen.getByRole("presentation"));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
+
+  it("clamps the popover width and offsets to the viewport at a narrow window width", () => {
+    const originalWidth = window.innerWidth;
+    const originalHeight = window.innerHeight;
+    try {
+      renderIndicator(jobsResult());
+      const trigger = screen.getByRole("button", { name: "Keine aktiven Aufgaben" });
+      vi.spyOn(trigger, "getBoundingClientRect").mockReturnValue({
+        top: 380,
+        right: 300,
+        bottom: 400,
+        left: 280,
+        width: 20,
+        height: 20,
+        x: 280,
+        y: 380,
+        toJSON: () => ({}),
+      });
+      Object.defineProperty(window, "innerWidth", { value: 320, configurable: true });
+      Object.defineProperty(window, "innerHeight", { value: 400, configurable: true });
+
+      fireEvent.click(trigger);
+
+      const dialog = screen.getByRole("dialog");
+      expect(dialog.style.width).toBe("304px"); // 320 - 2*8 margin
+      expect(dialog.style.right).toBe("8px"); // clamped up to the margin (viewport - width - margin)
+      expect(dialog.style.bottom).toBe("26px"); // 400 - 380 + 6
+    } finally {
+      Object.defineProperty(window, "innerWidth", { value: originalWidth, configurable: true });
+      Object.defineProperty(window, "innerHeight", { value: originalHeight, configurable: true });
+    }
+  });
 });
