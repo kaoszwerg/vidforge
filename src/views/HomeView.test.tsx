@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { HomeView } from "./HomeView";
 import { APP_NAME, APP_TAGLINE } from "../lib/app";
@@ -11,7 +11,12 @@ vi.mock("../hooks/useBuildInfo", () => ({ useBuildInfo: vi.fn() }));
 vi.mock("../hooks/useSettings", () => ({ useSettings: vi.fn() }));
 vi.mock("../store/library", () => ({ useLibraryStore: vi.fn() }));
 vi.mock("../store/ui", () => ({ useUiStore: vi.fn() }));
-vi.mock("../api/commands", () => ({ api: { pickFolder: vi.fn() } }));
+// Stub the folder browser to a single button that fires `onChoose` — this test verifies the wiring
+// (open → choose → setFolder/setView), not the browser's own tree/content (that has its own tests).
+vi.mock("../components/FolderBrowser", () => ({
+  FolderBrowser: ({ open, onChoose }: { open: boolean; onChoose: (p: string) => void }) =>
+    open ? <button onClick={() => onChoose("/picked")}>choose-folder-stub</button> : null,
+}));
 
 import { useFfmpegStatus } from "../hooks/useFfmpegStatus";
 import { useInstallFfmpeg } from "../hooks/useInstallFfmpeg";
@@ -20,7 +25,6 @@ import { useBuildInfo } from "../hooks/useBuildInfo";
 import { useSettings } from "../hooks/useSettings";
 import { useLibraryStore } from "../store/library";
 import { useUiStore } from "../store/ui";
-import { api } from "../api/commands";
 
 const readyStatus = {
   ffmpeg: { path: "/usr/bin/ffmpeg", version: "6.1.1", source: "path" },
@@ -111,7 +115,6 @@ describe("HomeView", () => {
     setFolder.mockReset();
     setView.mockReset();
     installMutate.mockReset();
-    vi.mocked(api.pickFolder).mockReset();
     mockFfmpeg();
     mockInstall();
     mockJobs();
@@ -128,23 +131,22 @@ describe("HomeView", () => {
   });
 
   describe("Start panel", () => {
-    it("picks a folder and navigates to the library on success", async () => {
-      vi.mocked(api.pickFolder).mockResolvedValue("/picked");
+    it("opens the HUD folder browser and navigates to the library once a folder is chosen", () => {
       render(<HomeView />);
+      // Nothing happens — no browser, no navigation — until the user asks to choose.
+      expect(screen.queryByText("choose-folder-stub")).toBeNull();
 
       fireEvent.click(screen.getByRole("button", { name: "Ordner wählen" }));
+      // The in-app browser opens; choosing a folder drops the user into the Library on it.
+      fireEvent.click(screen.getByText("choose-folder-stub"));
 
-      await waitFor(() => expect(setFolder).toHaveBeenCalledWith("/picked"));
+      expect(setFolder).toHaveBeenCalledWith("/picked");
       expect(setView).toHaveBeenCalledWith("library");
     });
 
-    it("does not navigate when the folder picker is cancelled", async () => {
-      vi.mocked(api.pickFolder).mockResolvedValue(null);
+    it("does not navigate while the browser is open but nothing is chosen yet", () => {
       render(<HomeView />);
-
       fireEvent.click(screen.getByRole("button", { name: "Ordner wählen" }));
-
-      await waitFor(() => expect(api.pickFolder).toHaveBeenCalledOnce());
       expect(setFolder).not.toHaveBeenCalled();
       expect(setView).not.toHaveBeenCalled();
     });
@@ -161,7 +163,6 @@ describe("HomeView", () => {
       fireEvent.click(screen.getByRole("button", { name: "Weiter zu „/videos“" }));
 
       expect(setView).toHaveBeenCalledWith("library");
-      expect(api.pickFolder).not.toHaveBeenCalled();
     });
   });
 

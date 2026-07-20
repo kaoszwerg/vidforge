@@ -273,6 +273,40 @@ pub struct PreparedPlayback {
     pub direct: bool,
 }
 
+/// One subdirectory in the in-app folder browser (ADR-PROJ-001). Read-only listing: a name to show and
+/// the absolute path to navigate into or choose. Files are never listed — the browser picks a *folder*.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct DirEntry {
+    /// Display name (the final path component).
+    pub name: String,
+    /// Absolute path.
+    pub path: String,
+}
+
+/// The kind of a browser root, so the frontend can pick an icon without parsing the label
+/// (ADR-CORE-005: the meaning is decided here, once).
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub enum RootKind {
+    Home,
+    Desktop,
+    Downloads,
+    Documents,
+    Videos,
+    Drive,
+}
+
+/// A starting point in the folder browser's tree: a standard user directory or a drive/volume
+/// (ADR-PROJ-001). `label` is what to show, `path` where it points, `kind` which icon to use.
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../src/bindings/")]
+pub struct FsRoot {
+    pub label: String,
+    pub path: String,
+    pub kind: RootKind,
+}
+
 fn default_ui_scale() -> f64 {
     1.0
 }

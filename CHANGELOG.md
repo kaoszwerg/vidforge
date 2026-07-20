@@ -64,6 +64,11 @@ All notable changes to this project are documented here. The format follows
   audio — is now played **directly from its original file**, with no ffmpeg run, no cache copy and no
   "preparing" wait; the command grants the asset scope just that one file. Only a source the webview
   cannot play (foreign container or codec) is still remuxed/transcoded into the cache. Nothing autoplays.
+- **In-app HUD folder browser** replacing the OS-native picker (owner decision): a two-column `Dialog` — a
+  lazy, expandable directory **tree** on the left (standard user dirs + drives as roots) and the selected
+  folder's sub**folders** on the right, with a clickable breadcrumb and a "Choose this folder" action.
+  Backed by read-only `browse_roots`/`browse_dir` commands (folder names only, never file contents). New
+  HUD `Dialog` primitive (portal modal, scrim, focus trap, Escape) and a `pathSegments` breadcrumb helper.
 
 ### Fixed
 
@@ -90,3 +95,11 @@ All notable changes to this project are documented here. The format follows
 - Field/section labels (`.hud-label`) no longer wrap to a second line, so a row of labelled controls
   (e.g. the Library search/sort/filter toolbar) keeps its labels on one line and its controls on one
   line instead of one column dropping out of alignment when its label was long (affects every view).
+- Library bulk-selection bar: the Preset select (which carries a label above its trigger) and the
+  Convert button now share one baseline (`items-end`), so the button no longer sits above the select's
+  trigger next to it.
+
+### Removed
+
+- `@tauri-apps/plugin-dialog` and its `dialog:allow-open` capability — the app opens no OS-native dialog
+  any more; folder selection is the in-app HUD browser above, and folder listing is read-only.

@@ -1,18 +1,12 @@
 import { describe, it, expect, vi, beforeEach, type Mock } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
 import { api } from "./commands";
 
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
 }));
 
-vi.mock("@tauri-apps/plugin-dialog", () => ({
-  open: vi.fn(),
-}));
-
 const mockInvoke = invoke as unknown as Mock;
-const mockOpen = open as unknown as Mock;
 
 describe("api", () => {
   beforeEach(() => {
@@ -171,21 +165,18 @@ describe("api", () => {
     expect(mockInvoke).toHaveBeenCalledWith("get_thumbnail", { path: "/videos/a.mp4" });
   });
 
-  describe("pickFolder", () => {
-    beforeEach(() => {
-      mockOpen.mockReset();
-    });
+  it("browseRoots calls browse_roots with no args", async () => {
+    const roots = [{ label: "Home", path: "/home/user", kind: "Home" }];
+    mockInvoke.mockResolvedValue(roots);
+    await expect(api.browseRoots()).resolves.toEqual(roots);
+    expect(mockInvoke).toHaveBeenCalledWith("browse_roots");
+  });
 
-    it("opens a directory-only dialog and resolves to the chosen path", async () => {
-      mockOpen.mockResolvedValue("/home/user/videos");
-      await expect(api.pickFolder()).resolves.toBe("/home/user/videos");
-      expect(mockOpen).toHaveBeenCalledWith({ directory: true });
-    });
-
-    it("resolves to null when the user cancels", async () => {
-      mockOpen.mockResolvedValue(null);
-      await expect(api.pickFolder()).resolves.toBeNull();
-    });
+  it("browseDir passes the path to browse_dir", async () => {
+    const subs = [{ name: "clips", path: "/home/user/clips" }];
+    mockInvoke.mockResolvedValue(subs);
+    await expect(api.browseDir("/home/user")).resolves.toEqual(subs);
+    expect(mockInvoke).toHaveBeenCalledWith("browse_dir", { path: "/home/user" });
   });
 
   it("listPresets calls list_presets with no args", async () => {

@@ -29,6 +29,9 @@ triggers:
     egress,
     i18n,
     language,
+    browse,
+    folder,
+    picker,
   ]
 applies-to:
   [
@@ -36,6 +39,7 @@ applies-to:
     "src-tauri/src/media/**",
     "src-tauri/src/jobs/**",
     "src-tauri/src/player/**",
+    "src-tauri/src/browse/**",
     "src-tauri/src/commands/**",
     "src/views/**",
     "src/components/**",
@@ -65,6 +69,10 @@ checklist an agent touching the pipeline must honour.
 - **Paths come from a scan, validated.** Commands act only on paths produced by `scan_folder` (canonicalised,
   validated), never on an arbitrary path handed in by the frontend. Thumbnails and on-demand transcodes go
   to the **app cache dir**, never beside the source.
+- **The folder is chosen with the in-app HUD browser, never the OS dialog** (owner decision). `browse_roots`
+  / `browse_dir` (`src-tauri/src/browse/`) are **read-only** directory listings — folder names only, never
+  file contents, never a write; the `FolderBrowser` HUD `Dialog` drives them. There is no `tauri-plugin-dialog`
+  and no native picker — do not reintroduce one. The chosen path still goes through `scan_folder`'s validation.
 - **Jobs never die silently.** Queue workers are registered in `crash-boundaries.json` (ADR-APP-032) with how
   they die; a single job's failure becomes `JobStatus::Failed`, is logged and emitted, and the worker
   continues. Progress comes from `ffmpeg -progress pipe:1`.

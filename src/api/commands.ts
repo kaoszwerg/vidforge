@@ -1,11 +1,12 @@
 // Typed wrappers around the Tauri command surface. Types come from the ts-rs bindings (SSOT,
 // ADR-CORE-005). Run `npm run gen:types` after touching Rust DTOs.
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
 import type { BuildInfo } from "../bindings/BuildInfo";
 import type { CrashReport } from "../bindings/CrashReport";
 import type { CustomEncode } from "../bindings/CustomEncode";
+import type { DirEntry } from "../bindings/DirEntry";
 import type { FfmpegStatus } from "../bindings/FfmpegStatus";
+import type { FsRoot } from "../bindings/FsRoot";
 import type { JobDto } from "../bindings/JobDto";
 import type { LogRecord } from "../bindings/LogRecord";
 import type { MediaInfo } from "../bindings/MediaInfo";
@@ -95,13 +96,16 @@ export const api = {
    */
   preparePlayer: (path: string) => invoke<PreparedPlayback>("prepare_player", { path }),
   /**
-   * Open the native OS folder picker and resolve to the chosen absolute path, or `null` if the user
-   * cancelled. The one OS-native surface this app keeps (ADR-APP-026 §3, recorded in ADR-PROJ-001): no
-   * in-webview folder browser exists, so the platform dialog is the explicit, documented exception
-   * rather than the silent default. Not routed through `invoke` — `@tauri-apps/plugin-dialog` talks to
-   * its own Tauri plugin commands directly; `dialog:allow-open` is granted in `capabilities/default.json`.
+   * The in-app HUD folder browser's starting points (ADR-PROJ-001): the standard user directories that
+   * resolve on this OS plus the mounted drives/volumes. Read-only. Replaces the OS-native picker
+   * (ADR-APP-026: no stock surface, not even the file dialog — the browser is a HUD `Dialog`).
    */
-  pickFolder: () => open({ directory: true }),
+  browseRoots: () => invoke<FsRoot[]>("browse_roots"),
+  /**
+   * The immediate sub**folders** of `path`, for the folder browser's tree/content pane (ADR-PROJ-001).
+   * Read-only; never lists files. Rejects with a typed error if the folder can't be opened.
+   */
+  browseDir: (path: string) => invoke<DirEntry[]>("browse_dir", { path }),
   /** The built-in conversion/repair presets (ADR-PROJ-001 §4). Labels/descriptions are localized
    * frontend-side from `id` (`src/lib/presets.ts`) — the backend carries no display text. */
   listPresets: () => invoke<PresetDto[]>("list_presets"),

@@ -4,6 +4,7 @@
 //! modules are added alongside these as the app grows — this file stays the single place where the
 //! app is assembled.
 
+pub mod browse;
 pub mod commands;
 pub mod crash;
 pub mod dto;
@@ -35,8 +36,6 @@ pub fn run() {
     let result = tauri::Builder::default()
         // Persist + restore window size and position across runs.
         .plugin(tauri_plugin_window_state::Builder::default().build())
-        // Native folder picker for choosing a folder to scan (ADR-PROJ-001).
-        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             // Tauri turns an `Err` from this closure into `panic!("Failed to setup app: {e}")`
             // (tauri 2.11.2, app.rs) — it never reaches `run()`'s `Result`. The panic hook would catch
@@ -60,6 +59,8 @@ pub fn run() {
             commands::update_settings,
             commands::discover_ffmpeg,
             commands::install_ffmpeg,
+            commands::browse::browse_roots,
+            commands::browse::browse_dir,
             commands::media::scan_folder,
             commands::media::probe_media,
             commands::media::get_thumbnail,

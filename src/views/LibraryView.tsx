@@ -8,9 +8,9 @@ import { TextField } from "../components/ui/TextField";
 import { Button } from "../components/ui/Button";
 import { IconButton } from "../components/ui/IconButton";
 import { FfmpegInstallProgress } from "../components/FfmpegInstallProgress";
+import { FolderBrowser } from "../components/FolderBrowser";
 import { VideoCard, type SelectModifiers } from "../components/VideoCard";
 import { DetailView } from "./DetailView";
-import { api } from "../api/commands";
 import { useFfmpegStatus } from "../hooks/useFfmpegStatus";
 import { useInstallFfmpeg } from "../hooks/useInstallFfmpeg";
 import { useScanFolder } from "../hooks/useScanFolder";
@@ -78,6 +78,7 @@ export function LibraryView() {
   // that calls setState synchronously on every run is a cascading extra render,
   // react-hooks/set-state-in-effect) — the same way the store already clears the selection on a new
   // folder.
+  const [browserOpen, setBrowserOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<LibrarySortOrder>("name-asc");
   const [extension, setExtension] = useState<string>(LIBRARY_FILTER_ALL);
@@ -95,11 +96,8 @@ export function LibraryView() {
     [scannedFiles, query, extension, sort],
   );
 
-  const handleBrowse = () => {
-    void api.pickFolder().then((picked) => {
-      if (picked) setFolder(picked);
-    });
-  };
+  // Opens the in-app HUD folder browser (ADR-PROJ-001) instead of the OS-native dialog (owner decision).
+  const handleBrowse = () => setBrowserOpen(true);
 
   const handleCardSelect = (path: string, mods: SelectModifiers) => {
     // Range/select-all operate over the currently *displayed* order (`filteredFiles`), not the raw
@@ -190,6 +188,12 @@ export function LibraryView() {
 
   return (
     <div className="h-full space-y-4 overflow-auto p-6">
+      <FolderBrowser
+        open={browserOpen}
+        onClose={() => setBrowserOpen(false)}
+        onChoose={setFolder}
+        initialPath={folder}
+      />
       <Dropzone onFolderDropped={setFolder} onBrowse={handleBrowse} compact={folder != null}>
         <p className="text-dim truncate text-sm">{folder ?? t("library.dropzone.label")}</p>
       </Dropzone>
@@ -274,8 +278,12 @@ export function LibraryView() {
 
       {selected.size > 0 ? (
         <HudPanel accent="green">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3">
+          {/* `items-end`, not `items-center`: the Preset `Select` carries a label above its trigger, so
+              only bottom-aligning puts that trigger, the Convert button and the left-hand controls on one
+              line — otherwise the labelled control sits lower than the label-less button next to it (owner
+              feedback). The label floats above; every interactive control shares one baseline. */}
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3 self-center">
               <span className="text-fg text-sm">
                 {t("library.selectCount", { count: selected.size })}
               </span>
@@ -283,7 +291,7 @@ export function LibraryView() {
                 {t("library.selectClear")}
               </Button>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-end gap-2">
               {presets.isPending ? (
                 <span className="text-dim text-xs">{t("common.loading")}</span>
               ) : (

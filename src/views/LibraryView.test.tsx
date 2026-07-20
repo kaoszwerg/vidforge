@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ReactNode } from "react";
 import { LibraryView } from "./LibraryView";
@@ -9,8 +9,13 @@ vi.mock("../hooks/useInstallFfmpeg", () => ({ useInstallFfmpeg: vi.fn() }));
 vi.mock("../hooks/useScanFolder", () => ({ useScanFolder: vi.fn() }));
 vi.mock("../hooks/useJobs", () => ({ usePresets: vi.fn(), useEnqueueJob: vi.fn() }));
 vi.mock("../store/library", () => ({ useLibraryStore: vi.fn() }));
-vi.mock("../api/commands", () => ({ api: { pickFolder: vi.fn() } }));
 vi.mock("../hooks/useSettings", () => ({ useSettings: vi.fn(), useUpdateSettings: vi.fn() }));
+// Stub the folder browser to one button that fires `onChoose` — this test verifies the wiring (Browse
+// opens it, choosing sets the folder), not the browser's own tree/content (covered by its own tests).
+vi.mock("../components/FolderBrowser", () => ({
+  FolderBrowser: ({ open, onChoose }: { open: boolean; onChoose: (p: string) => void }) =>
+    open ? <button onClick={() => onChoose("/picked")}>choose-folder-stub</button> : null,
+}));
 
 vi.mock("../components/VideoCard", () => ({
   VideoCard: ({
@@ -76,7 +81,6 @@ import { useInstallFfmpeg } from "../hooks/useInstallFfmpeg";
 import { useScanFolder } from "../hooks/useScanFolder";
 import { usePresets, useEnqueueJob } from "../hooks/useJobs";
 import { useLibraryStore } from "../store/library";
-import { api } from "../api/commands";
 import { useSettings } from "../hooks/useSettings";
 
 const readyStatus = {
@@ -183,7 +187,6 @@ describe("LibraryView", () => {
     clearSelection.mockReset();
     enqueueMutate.mockReset();
     installMutate.mockReset();
-    vi.mocked(api.pickFolder).mockReset();
     mockFfmpeg();
     mockInstall();
     mockScan();
@@ -334,23 +337,19 @@ describe("LibraryView", () => {
     expect(setFolder).toHaveBeenCalledWith("/dropped");
   });
 
-  it("opens the OS folder picker on Browse and sets the folder on success", async () => {
-    vi.mocked(api.pickFolder).mockResolvedValue("/picked");
+  it("opens the HUD folder browser on Browse and sets the folder once one is chosen", () => {
     render(<LibraryView />);
+    expect(screen.queryByText("choose-folder-stub")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "browse-stub" }));
+    fireEvent.click(screen.getByText("choose-folder-stub"));
 
-    expect(api.pickFolder).toHaveBeenCalledOnce();
-    await waitFor(() => expect(setFolder).toHaveBeenCalledWith("/picked"));
+    expect(setFolder).toHaveBeenCalledWith("/picked");
   });
 
-  it("does not call setFolder when the picker is cancelled", async () => {
-    vi.mocked(api.pickFolder).mockResolvedValue(null);
+  it("does not set the folder while the browser is open but nothing is chosen", () => {
     render(<LibraryView />);
-
     fireEvent.click(screen.getByRole("button", { name: "browse-stub" }));
-
-    await waitFor(() => expect(api.pickFolder).toHaveBeenCalledOnce());
     expect(setFolder).not.toHaveBeenCalled();
   });
 

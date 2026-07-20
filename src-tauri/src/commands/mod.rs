@@ -7,6 +7,7 @@ use crate::settings::SettingsPatch;
 use crate::state::AppState;
 use tauri::{Manager, State};
 
+pub mod browse;
 pub mod jobs;
 pub mod media;
 

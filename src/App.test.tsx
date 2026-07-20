@@ -30,7 +30,8 @@ vi.mock("./api/commands", () => ({
     scanFolder: vi.fn().mockResolvedValue([]),
     probeMedia: vi.fn(),
     getThumbnail: vi.fn(),
-    pickFolder: vi.fn().mockResolvedValue(null),
+    browseRoots: vi.fn().mockResolvedValue([]),
+    browseDir: vi.fn().mockResolvedValue([]),
     // useJobs (App shell: window-frame activity signal + status-bar JobsIndicator) always mounts.
     listJobs: vi.fn().mockResolvedValue([]),
     listPresets: vi.fn().mockResolvedValue([]),

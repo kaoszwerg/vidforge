@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { HudPanel } from "../components/ui/HudPanel";
 import { Button } from "../components/ui/Button";
 import { MetaRow } from "../components/ui/MetaRow";
 import { FfmpegInstallProgress } from "../components/FfmpegInstallProgress";
-import { api } from "../api/commands";
+import { FolderBrowser } from "../components/FolderBrowser";
 import { useBuildInfo } from "../hooks/useBuildInfo";
 import { useFfmpegStatus } from "../hooks/useFfmpegStatus";
 import { useInstallFfmpeg } from "../hooks/useInstallFfmpeg";
@@ -35,13 +36,14 @@ export function HomeView() {
   const jobs = useJobs();
   const presets = usePresets();
   const { data: build } = useBuildInfo();
+  const [browserOpen, setBrowserOpen] = useState(false);
 
-  const handleChooseFolder = () => {
-    void api.pickFolder().then((picked) => {
-      if (!picked) return;
-      setFolder(picked);
-      setView("library");
-    });
+  // Opens the in-app HUD folder browser (ADR-PROJ-001) instead of the OS-native dialog (owner decision);
+  // choosing a folder drops the user straight into the Library on it.
+  const handleChooseFolder = () => setBrowserOpen(true);
+  const onChooseFolder = (picked: string) => {
+    setFolder(picked);
+    setView("library");
   };
 
   const ffmpegReady = ffmpeg.data?.ready ?? false;
@@ -49,6 +51,12 @@ export function HomeView() {
 
   return (
     <div className="h-full space-y-4 overflow-auto p-6">
+      <FolderBrowser
+        open={browserOpen}
+        onClose={() => setBrowserOpen(false)}
+        onChoose={onChooseFolder}
+        initialPath={folder}
+      />
       <header className="space-y-1">
         <h1
           className="text-glow-cyan text-2xl"
