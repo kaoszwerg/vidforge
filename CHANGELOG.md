@@ -83,3 +83,6 @@ All notable changes to this project are documented here. The format follows
 - Library card checkbox: it overlays the thumbnail's top-left corner (via an absolutely-positioned
   wrapper) instead of being laid out in flow and displacing the preview image, and it can no longer
   overhang the card's neon border; the quality badge mirrors it at the top-right.
+- Field/section labels (`.hud-label`) no longer wrap to a second line, so a row of labelled controls
+  (e.g. the Library search/sort/filter toolbar) keeps its labels on one line and its controls on one
+  line instead of one column dropping out of alignment when its label was long (affects every view).

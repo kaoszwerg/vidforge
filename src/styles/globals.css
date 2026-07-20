@@ -210,6 +210,11 @@
   text-transform: uppercase;
   color: var(--hud-accent, var(--saga-neon-cyan));
   text-shadow: 0 0 8px color-mix(in srgb, var(--hud-accent, var(--saga-neon-cyan)) 40%, transparent);
+  /* A field/section label is a single short line. Without this, the wide `letter-spacing` above lets a
+     label like "DATEITYP" wrap to two lines in a narrow toolbar column, which makes that column taller
+     and knocks its control out of line with its neighbours — labels and controls must each stay on one
+     line so a row of labelled controls aligns (owner feedback: affects every view, esp. the grid filter). */
+  white-space: nowrap;
 }
 .hud-divider {
   height: 10px;
