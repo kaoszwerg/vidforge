@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { AlertTriangle, Search, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2, Search, X } from "lucide-react";
 import { HudPanel } from "../components/ui/HudPanel";
 import { Dropzone } from "../components/ui/Dropzone";
 import { MetaRow } from "../components/ui/MetaRow";
@@ -15,6 +15,7 @@ import { useFfmpegStatus } from "../hooks/useFfmpegStatus";
 import { useInstallFfmpeg } from "../hooks/useInstallFfmpeg";
 import { useScanFolder } from "../hooks/useScanFolder";
 import { useEnqueueJob, usePresets } from "../hooks/useJobs";
+import { useBulkIntegrityCheck } from "../hooks/useBulkIntegrityCheck";
 import { useLibraryStore } from "../store/library";
 import { useT } from "../i18n";
 import { errorMessage } from "../lib/errors";
@@ -126,6 +127,19 @@ export function LibraryView() {
     for (const path of selected) {
       enqueueJob.mutate({ inputPath: path, presetId: bulkPresetId });
     }
+    clearSelection();
+  };
+
+  // Bulk deep integrity check over the selected files (owner: bulk defect check), throttled by its own
+  // pool (useBulkIntegrityCheck). Repairing the defective ones reuses the existing repair job — one place
+  // for repair (ADR-CORE-005) — and clears the batch.
+  const bulkCheck = useBulkIntegrityCheck();
+  const handleBulkCheck = () => bulkCheck.start(Array.from(selected));
+  const handleRepairDefective = () => {
+    for (const report of bulkCheck.defective) {
+      enqueueJob.mutate({ inputPath: report.path, presetId: "repair" });
+    }
+    bulkCheck.reset();
     clearSelection();
   };
 
@@ -282,38 +296,95 @@ export function LibraryView() {
               only bottom-aligning puts that trigger, the Convert button and the left-hand controls on one
               line — otherwise the labelled control sits lower than the label-less button next to it (owner
               feedback). The label floats above; every interactive control shares one baseline. */}
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3 self-center">
-              <span className="text-fg text-sm">
-                {t("library.selectCount", { count: selected.size })}
-              </span>
-              <Button variant="ghost" onClick={clearSelection}>
-                {t("library.selectClear")}
-              </Button>
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3 self-center">
+                <span className="text-fg text-sm">
+                  {t("library.selectCount", { count: selected.size })}
+                </span>
+                <Button variant="ghost" onClick={clearSelection}>
+                  {t("library.selectClear")}
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-end gap-2">
+                <Button
+                  variant="ghost"
+                  onClick={handleBulkCheck}
+                  disabled={bulkCheck.running}
+                  className="px-3 py-1.5 text-xs"
+                >
+                  {t("integrity.bulkCheck")}
+                </Button>
+                {presets.isPending ? (
+                  <span className="text-dim text-xs">{t("common.loading")}</span>
+                ) : (
+                  <Select
+                    label={t("preset.selectLabel")}
+                    value={bulkPresetId}
+                    onChange={setBulkPresetId}
+                    options={convertPresets.map((p) => ({
+                      value: p.id,
+                      label: t(presetLabelKey(p.id)),
+                    }))}
+                  />
+                )}
+                <Button
+                  accent="green"
+                  onClick={handleBulkConvert}
+                  disabled={enqueueJob.isPending || convertPresets.length === 0}
+                  className="px-4 py-1.5 text-xs"
+                >
+                  {t("library.selectConvert")}
+                </Button>
+              </div>
             </div>
-            <div className="flex flex-wrap items-end gap-2">
-              {presets.isPending ? (
-                <span className="text-dim text-xs">{t("common.loading")}</span>
-              ) : (
-                <Select
-                  label={t("preset.selectLabel")}
-                  value={bulkPresetId}
-                  onChange={setBulkPresetId}
-                  options={convertPresets.map((p) => ({
-                    value: p.id,
-                    label: t(presetLabelKey(p.id)),
-                  }))}
-                />
-              )}
-              <Button
-                accent="green"
-                onClick={handleBulkConvert}
-                disabled={enqueueJob.isPending || convertPresets.length === 0}
-                className="px-4 py-1.5 text-xs"
-              >
-                {t("library.selectConvert")}
-              </Button>
-            </div>
+
+            {/* Bulk deep-check progress, then the verdict + a one-click repair of the defective ones. */}
+            {bulkCheck.running || bulkCheck.total > 0 ? (
+              <div className="border-elevated flex flex-wrap items-center gap-3 border-t pt-2 text-xs">
+                {bulkCheck.running ? (
+                  <>
+                    <span className="text-dim flex items-center gap-1.5">
+                      <Loader2 size={12} strokeWidth={2} className="animate-spin" aria-hidden />
+                      {t("integrity.bulkProgress", {
+                        done: bulkCheck.done,
+                        total: bulkCheck.total,
+                      })}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      onClick={bulkCheck.cancel}
+                      className="px-2 py-0.5 text-xs"
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                  </>
+                ) : bulkCheck.defective.length > 0 ? (
+                  <>
+                    <span className="text-danger flex items-center gap-1.5">
+                      <AlertTriangle size={13} strokeWidth={2} aria-hidden />
+                      {t("integrity.bulkDefective", {
+                        count: bulkCheck.defective.length,
+                        total: bulkCheck.total,
+                      })}
+                    </span>
+                    <Button
+                      accent="gold"
+                      onClick={handleRepairDefective}
+                      disabled={enqueueJob.isPending}
+                      className="px-3 py-1 text-xs"
+                    >
+                      {t("integrity.repairDefective", { count: bulkCheck.defective.length })}
+                    </Button>
+                  </>
+                ) : (
+                  <span className="text-green flex items-center gap-1.5">
+                    <CheckCircle2 size={13} strokeWidth={2} aria-hidden />
+                    {t("integrity.bulkAllHealthy", { total: bulkCheck.total })}
+                  </span>
+                )}
+              </div>
+            ) : null}
           </div>
         </HudPanel>
       ) : null}

@@ -69,7 +69,9 @@ All notable changes to this project are documented here. The format follows
   Detail view's **Integrity panel** shows the verdict, offers a thorough **deep** check (full decode,
   on-demand) and points at the existing **Repair** for a bad file. New read-only `check_integrity` command
   (quick = `-c copy -f null`, deep = `-f null` to the null muxer — never writes; a defect is a reported
-  result, not a crash). Bulk checking is the next increment.
+  result, not a crash). **Bulk**: with cards selected, "Check selected" deep-checks them all through a
+  small concurrency pool (live `done/total` progress, cancel), reports how many are defective, and offers
+  a one-click **repair of the defective ones** (via the existing repair job).
 - **In-app HUD folder browser** replacing the OS-native picker (owner decision): a two-column `Dialog` — a
   lazy, expandable directory **tree** on the left (standard user dirs + drives as roots) and the selected
   folder's sub**folders** on the right, with a clickable breadcrumb and a "Choose this folder" action.
