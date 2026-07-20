@@ -48,6 +48,26 @@ export function formatBitrate(bitsPerSec: number): string {
   return `${(bitsPerSec / 1_000_000).toFixed(1)} Mbps`;
 }
 
+/**
+ * Short, scannable resolution tier for a badge — e.g. `resolutionLabel(1920, 1080)` -> `"1080p"`,
+ * `resolutionLabel(3840, 2160)` -> `"4K"`. Derived from the **shorter** side (`min(width, height)`) so
+ * it is orientation-agnostic: a 1080×1920 portrait phone clip is still "1080p", matching how people name
+ * it, not "1920p". Falls back to `"{p}p"` for an unusual size and `"—"` for a missing/zero dimension.
+ */
+export function resolutionLabel(width: number, height: number): string {
+  const p = Math.min(width, height);
+  if (!Number.isFinite(p) || p <= 0) return "—";
+  if (p >= 4320) return "8K";
+  if (p >= 2160) return "4K";
+  if (p >= 1440) return "1440p";
+  if (p >= 1080) return "1080p";
+  if (p >= 720) return "720p";
+  if (p >= 576) return "576p";
+  if (p >= 480) return "480p";
+  if (p >= 360) return "360p";
+  return `${p}p`;
+}
+
 /** Frame rate — e.g. `formatFps(30)` -> `"30 fps"`, `formatFps(29.97)` -> `"29.97 fps"`: a whole
  * number prints without decimals, a fractional rate (common with NTSC-derived sources) keeps two. */
 export function formatFps(fps: number): string {

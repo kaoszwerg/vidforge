@@ -18,11 +18,13 @@ vi.mock("../components/VideoCard", () => ({
     onSelect,
     onToggleSelect,
     selected,
+    anySelected,
   }: {
     file: { path: string; name: string };
     onSelect: (p: string, mods: SelectModifiers) => void;
     onToggleSelect: (p: string) => void;
     selected?: boolean;
+    anySelected?: boolean;
   }) => (
     <div>
       <button
@@ -34,6 +36,7 @@ vi.mock("../components/VideoCard", () => ({
         {`card:${file.name}`}
       </button>
       <button onClick={() => onToggleSelect(file.path)}>{`toggle:${file.name}`}</button>
+      <span>{`anySelected:${file.name}:${anySelected ?? false}`}</span>
     </div>
   ),
 }));
@@ -393,6 +396,33 @@ describe("LibraryView", () => {
     });
     const { container } = render(<LibraryView />);
     expect(container.innerHTML).toContain("grid-cols-[repeat(auto-fill,minmax(220px,1fr))]");
+  });
+
+  it("tells every card whether any bulk selection is active, not just the selected ones", () => {
+    mockStore({
+      folder: "/videos",
+      selectedPath: null,
+      selected: new Set(["/videos/a.mp4"]),
+    });
+    mockScan({
+      data: [
+        { path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 },
+        { path: "/videos/b.mp4", name: "b.mp4", extension: "mp4", size_bytes: 1 },
+      ],
+    });
+    render(<LibraryView />);
+
+    expect(screen.getByText("anySelected:a.mp4:true")).toBeInTheDocument();
+    // b.mp4 itself isn't selected, but a selection is active elsewhere in the grid.
+    expect(screen.getByText("anySelected:b.mp4:true")).toBeInTheDocument();
+  });
+
+  it("tells every card no bulk selection is active when the selection is empty", () => {
+    mockStore({ folder: "/videos", selectedPath: null });
+    mockScan({ data: [{ path: "/videos/a.mp4", name: "a.mp4", extension: "mp4", size_bytes: 1 }] });
+    render(<LibraryView />);
+
+    expect(screen.getByText("anySelected:a.mp4:false")).toBeInTheDocument();
   });
 
   it("calls onToggleSelect (toggleSelected) when a card's checkbox stub is clicked", () => {

@@ -100,15 +100,34 @@ function ReadyPlayer({
   };
 
   return (
-    <div ref={containerRef} className="hud-clip-sm bg-elevated space-y-3 p-2">
+    <div
+      ref={containerRef}
+      className={
+        fullscreen
+          ? "bg-elevated flex h-full flex-col gap-3 p-2"
+          : "hud-clip-sm bg-elevated space-y-3 p-2"
+      }
+    >
       {playbackError ? (
         <p className="text-danger text-sm">{playbackError}</p>
       ) : (
         <>
-          <div className="bg-deep flex aspect-video w-full items-center justify-center overflow-hidden">
+          {/* In fullscreen the container fills the screen and this wrapper takes the leftover height
+              (`flex-1 min-h-0`) so the transport bar below always stays visible. Inline it keeps a 16:9
+              box BUT capped at `max-h-[60vh]`: without the cap, `aspect-video w-full` derives the height
+              from the column width, so on a wide/maximised window the video grew taller than the viewport
+              and pushed the transport controls (and everything below) off-screen, unreachable even by
+              scrolling (owner feedback). The cap wins over the aspect ratio, the video letterboxes via
+              `object-contain`, and the controls always stay in view. */}
+          <div
+            className={`bg-deep flex w-full items-center justify-center overflow-hidden ${
+              fullscreen ? "min-h-0 flex-1" : "aspect-video max-h-[60vh]"
+            }`}
+          >
             <video
               ref={videoRef}
               src={source.srcUrl}
+              playsInline
               className="h-full w-full object-contain"
               onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
               onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
@@ -130,16 +149,22 @@ function ReadyPlayer({
             <span className="text-dim w-10 shrink-0 text-right font-mono text-xs">
               {formatDuration(currentTime)}
             </span>
-            <Slider
-              value={currentTime}
-              min={0}
-              max={duration > 0 ? duration : 0}
-              step={0.1}
-              onChange={onSeek}
-              ariaLabel={t("player.seek")}
-              disabled={duration <= 0}
-              className="flex-1"
-            />
+            {/* The width lives on this wrapper, not on the `Slider`: the primitive already forces its own
+                `w-full`, so a `flex-1`/`w-20` passed straight to it would collide with that (two width
+                utilities, non-deterministic winner) — which is exactly what collapsed the seek bar to a
+                dot and blew the volume bar up to full width. The wrapper owns the flex sizing; the slider
+                fills it. */}
+            <div className="min-w-0 flex-1">
+              <Slider
+                value={currentTime}
+                min={0}
+                max={duration > 0 ? duration : 0}
+                step={0.1}
+                onChange={onSeek}
+                ariaLabel={t("player.seek")}
+                disabled={duration <= 0}
+              />
+            </div>
             <span className="text-dim w-10 shrink-0 font-mono text-xs">
               {formatDuration(duration)}
             </span>
@@ -155,18 +180,20 @@ function ReadyPlayer({
                 <Volume2 size={14} strokeWidth={2} />
               )}
             </IconButton>
-            <Slider
-              value={muted ? 0 : volume}
-              min={0}
-              max={1}
-              step={0.05}
-              onChange={onVolumeChange}
-              ariaLabel={t("player.volume")}
-              /* Hidden below `sm`: at narrow widths the seek bar (the control that actually matters) must
-                 keep its width — the volume slider is the one to give up its space first, while the mute
-                 IconButton stays available regardless of width. */
-              className="hidden w-20 sm:block"
-            />
+            {/* Width on the wrapper for the same reason as the seek slider above. Hidden below `sm`: at
+                narrow widths the seek bar (the control that actually matters) must keep its width — the
+                volume slider gives up its space first, while the mute IconButton stays available
+                regardless of width. */}
+            <div className="hidden w-24 shrink-0 sm:block">
+              <Slider
+                value={muted ? 0 : volume}
+                min={0}
+                max={1}
+                step={0.05}
+                onChange={onVolumeChange}
+                ariaLabel={t("player.volume")}
+              />
+            </div>
 
             <IconButton
               label={t("player.fullscreen")}

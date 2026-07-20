@@ -141,6 +141,23 @@
   );
   clip-path: var(--hud-clip);
 }
+/* Symmetric tiny chamfer for small square controls (the selection Checkbox): the asymmetric hud-clip-sm
+   (8px top-left vs 4px elsewhere) reads as lopsided on a ~20px box. Defined AFTER hud-clip-sm and applied
+   on top of it, so its --hud-clip wins (same specificity, later source order) — the box then reads as an
+   even square with matching cut corners. */
+.hud-clip-xs {
+  --hud-clip: polygon(
+    3px 0,
+    calc(100% - 3px) 0,
+    100% 3px,
+    100% calc(100% - 3px),
+    calc(100% - 3px) 100%,
+    3px 100%,
+    0 calc(100% - 3px),
+    0 3px
+  );
+  clip-path: var(--hud-clip);
+}
 .hud-panel {
   position: relative;
   isolation: isolate;

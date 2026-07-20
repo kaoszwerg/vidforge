@@ -17,7 +17,7 @@ export interface BadgeProps {
 export function Badge({ accent = "cyan", className = "", children }: BadgeProps) {
   return (
     <span
-      className={`hud-clip-sm hud-accent-${accent} bg-elevated ${hudAccentTextClass(accent)} px-1.5 py-0.5 text-[9px] font-bold tracking-widest uppercase ${className}`.trim()}
+      className={`hud-clip-sm hud-accent-${accent} bg-elevated ${hudAccentTextClass(accent)} px-1.5 py-0.5 text-[10px] font-bold tracking-widest uppercase ${className}`.trim()}
     >
       {children}
     </span>

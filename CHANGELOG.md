@@ -56,6 +56,10 @@ All notable changes to this project are documented here. The format follows
   follows container width (`auto-fill minmax`), each card's metadata is tiered/scannable with the quality
   badge overlaid on the thumbnail, the player's volume slider yields at narrow widths, and loading states
   show a spinner.
+- Library cards surface their metadata as colour-coded HUD badges — the resolution tier tinted the same
+  accent as the corner quality badge (e.g. green "1080P", gold "720P") and the codec in cyan — with the
+  exact dimensions, duration (gold, clock icon) and size (drive icon) demoted to a secondary line, so the
+  key facts are scannable at a glance. The search field gained a clear button.
 
 ### Fixed
 
@@ -68,3 +72,14 @@ All notable changes to this project are documented here. The format follows
 - Library multiselect: a discoverable **checkbox** overlays each card's thumbnail (was Ctrl/Shift-click
   only); the file list gained **search, sort and extension filter**.
 - Tooltips flip above the trigger when there is no room below, so footer tooltips are no longer clipped.
+- Player transport controls: the seek and volume sliders no longer fight over a shared `w-full` (which
+  had collapsed the seek bar to a dot and stretched the volume bar full-width) — each sits in its own
+  sizing wrapper; the inline video is height-capped (`max-h-[60vh]`) so on a wide/maximised window it no
+  longer grows taller than the viewport and pushes the transport bar (and everything below) off-screen;
+  and fullscreen lays the player out as a flex column so the controls stay visible with a clear exit.
+- Edge tooltips (e.g. the sidebar): the popover is measured after it mounts and re-placed from its real
+  width, so a short label near the left/right edge sits next to its trigger instead of being clamped far
+  away from it.
+- Library card checkbox: it overlays the thumbnail's top-left corner (via an absolutely-positioned
+  wrapper) instead of being laid out in flow and displacing the preview image, and it can no longer
+  overhang the card's neon border; the quality badge mirrors it at the top-right.

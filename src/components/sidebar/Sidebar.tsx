@@ -6,16 +6,16 @@ import { useUiStore, type ViewId } from "../../store/ui";
 
 type NavItem = { id: ViewId; Icon: LucideIcon; label: string };
 
-/** Left HUD navigation rail: main views at the top (Library first — ADR-PROJ-001, the primary view),
- * logs/settings pinned to the bottom. */
+/** Left HUD navigation rail: main views at the top (Home first — the dashboard/landing), then the
+ * Library, with logs/settings pinned to the bottom. */
 export function Sidebar() {
   const view = useUiStore((s) => s.view);
   const setView = useUiStore((s) => s.setView);
   const t = useT();
 
   const mainNav: NavItem[] = [
-    { id: "library", Icon: Film, label: t("nav.library") },
     { id: "home", Icon: Home, label: t("nav.home") },
+    { id: "library", Icon: Film, label: t("nav.library") },
   ];
   const bottomNav: NavItem[] = [
     { id: "logs", Icon: ScrollText, label: t("nav.logs") },

@@ -77,4 +77,26 @@ describe("Checkbox", () => {
       screen.getByRole("checkbox", { name: "Select a.mp4" }).closest("label")?.className,
     ).toContain("ml-2");
   });
+
+  it("defaults to the 24px (md) box", () => {
+    render(<Checkbox checked={false} onChange={vi.fn()} label="Select a.mp4" />);
+    const label = screen.getByRole("checkbox", { name: "Select a.mp4" }).closest("label");
+    expect(label?.className).toContain("h-6");
+    expect(label?.className).toContain("w-6");
+  });
+
+  it("shrinks to the 20px (sm) box when requested, for a tight overlay corner", () => {
+    render(<Checkbox checked={false} onChange={vi.fn()} label="Select a.mp4" size="sm" />);
+    const label = screen.getByRole("checkbox", { name: "Select a.mp4" }).closest("label");
+    expect(label?.className).toContain("h-5");
+    expect(label?.className).toContain("w-5");
+    expect(label?.className).not.toContain("h-6");
+  });
+
+  it("shrinks the check glyph to match the sm box", () => {
+    const { container } = render(
+      <Checkbox checked onChange={vi.fn()} label="Select a.mp4" size="sm" />,
+    );
+    expect(container.querySelector("svg")).toHaveAttribute("width", "12");
+  });
 });

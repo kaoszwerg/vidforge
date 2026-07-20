@@ -44,7 +44,7 @@ export function TitleBar() {
           {APP_TAGLINE}
         </span>
         {build?.channel === "dev" ? (
-          <span className="hud-clip-sm hud-accent-gold neon-glow-gold bg-elevated px-1.5 py-0.5 text-[9px] font-bold tracking-widest text-[var(--saga-gold)] uppercase">
+          <span className="hud-clip-sm hud-accent-gold neon-glow-gold bg-elevated px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-[var(--saga-gold)] uppercase">
             {t("titlebar.devBadge")}
           </span>
         ) : null}

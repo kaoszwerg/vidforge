@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
-import { AlertTriangle, Search } from "lucide-react";
+import { AlertTriangle, Search, X } from "lucide-react";
 import { HudPanel } from "../components/ui/HudPanel";
 import { Dropzone } from "../components/ui/Dropzone";
 import { MetaRow } from "../components/ui/MetaRow";
 import { Select } from "../components/ui/Select";
 import { TextField } from "../components/ui/TextField";
 import { Button } from "../components/ui/Button";
-import { ProgressBar } from "../components/ui/ProgressBar";
+import { IconButton } from "../components/ui/IconButton";
+import { FfmpegInstallProgress } from "../components/FfmpegInstallProgress";
 import { VideoCard, type SelectModifiers } from "../components/VideoCard";
 import { DetailView } from "./DetailView";
 import { api } from "../api/commands";
@@ -15,7 +16,7 @@ import { useInstallFfmpeg } from "../hooks/useInstallFfmpeg";
 import { useScanFolder } from "../hooks/useScanFolder";
 import { useEnqueueJob, usePresets } from "../hooks/useJobs";
 import { useLibraryStore } from "../store/library";
-import { useT, type MessageKey } from "../i18n";
+import { useT } from "../i18n";
 import { errorMessage } from "../lib/errors";
 import { isConvertiblePreset, presetLabelKey } from "../lib/presets";
 import {
@@ -26,25 +27,6 @@ import {
   LIBRARY_SORT_ORDERS,
   type LibrarySortOrder,
 } from "../lib/librarySort";
-
-/** `InstallProgress.phase` (download/verify/extract/install/done) to its label key. `"error"` is
- * handled separately (the failure message replaces the progress row entirely) — a phase this switch
- * has never seen (a future backend addition) falls back to the generic "installing" label rather than
- * rendering nothing. */
-function installPhaseLabelKey(phase: string): MessageKey {
-  switch (phase) {
-    case "download":
-      return "install.phase.download";
-    case "verify":
-      return "install.phase.verify";
-    case "extract":
-      return "install.phase.extract";
-    case "done":
-      return "install.phase.done";
-    default:
-      return "install.phase.install";
-  }
-}
 
 /**
  * Library view (ADR-PROJ-001): pick or drop a folder, scan it, and show one card per video in a
@@ -191,21 +173,6 @@ export function LibraryView() {
   }
 
   if (ffmpeg.data && !ffmpeg.data.ready) {
-    // `phase: "error"` is treated as a failure the moment the event arrives — before the mutation
-    // promise itself has settled — so the progress row swaps to the failure message immediately rather
-    // than sitting on a stale "error" phase label for the remainder of `isInstalling`.
-    const installProgress =
-      installFfmpeg.isInstalling && installFfmpeg.progress?.phase !== "error"
-        ? installFfmpeg.progress
-        : null;
-    const installFailed = installFfmpeg.progress?.phase === "error" || installFfmpeg.error != null;
-    const installFailureDetail =
-      installFfmpeg.progress?.phase === "error" && installFfmpeg.progress.message
-        ? installFfmpeg.progress.message
-        : installFfmpeg.error
-          ? errorMessage(installFfmpeg.error)
-          : null;
-
     return (
       <div className="h-full space-y-4 overflow-auto p-6">
         <HudPanel accent="danger" label={t("library.ffmpegMissing.title")}>
@@ -215,36 +182,7 @@ export function LibraryView() {
             <MetaRow k="ffprobe" v={ffmpeg.data.ffprobe?.path ?? "—"} />
           </dl>
           <p className="text-dim mt-3 text-xs leading-relaxed">{t("install.explain")}</p>
-          <div className="mt-3 flex flex-col gap-2">
-            <Button
-              accent="cyan"
-              onClick={() => installFfmpeg.install()}
-              disabled={installFfmpeg.isInstalling}
-              className="self-start"
-            >
-              {t("install.button")}
-            </Button>
-            {installProgress ? (
-              <div className="flex flex-col gap-1">
-                <div className="text-dim flex items-center justify-between text-xs">
-                  <span>{t(installPhaseLabelKey(installProgress.phase))}</span>
-                  {installProgress.percent >= 0 ? (
-                    <span>{Math.round(installProgress.percent)}%</span>
-                  ) : null}
-                </div>
-                <ProgressBar
-                  percent={installProgress.percent}
-                  indeterminate={installProgress.percent < 0}
-                />
-              </div>
-            ) : null}
-            {installFailed ? (
-              <p className="text-danger text-xs" role="alert">
-                {t("install.failed")}
-                {installFailureDetail ? ` ${installFailureDetail}` : ""}
-              </p>
-            ) : null}
-          </div>
+          <FfmpegInstallProgress installFfmpeg={installFfmpeg} t={t} className="mt-3" />
         </HudPanel>
       </div>
     );
@@ -280,7 +218,10 @@ export function LibraryView() {
       {scan.data && scan.data.length > 0 ? (
         <div className="flex flex-wrap items-end gap-2">
           <div className="flex flex-col gap-1.5">
-            <span className="hud-label" style={{ "--hud-label-size": "0.7rem" } as CSSProperties}>
+            <span
+              className="hud-label"
+              style={{ "--hud-label-size": "0.6875rem" } as CSSProperties}
+            >
               {t("library.toolbar.searchLabel")}
             </span>
             <div className="relative">
@@ -295,8 +236,19 @@ export function LibraryView() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t("library.toolbar.searchPlaceholder")}
                 aria-label={t("library.toolbar.searchAriaLabel")}
-                className="w-40 pl-6"
+                className="w-40 pr-7 pl-6"
               />
+              {query ? (
+                <IconButton
+                  label={t("library.toolbar.searchClear")}
+                  variant="ghost"
+                  tooltip={null}
+                  onClick={() => setQuery("")}
+                  className="absolute top-1/2 right-1 -translate-y-1/2 p-0.5"
+                >
+                  <X size={12} strokeWidth={2} />
+                </IconButton>
+              ) : null}
             </div>
           </div>
           <Select
@@ -365,6 +317,11 @@ export function LibraryView() {
       ) : null}
 
       {filteredFiles.length > 0 ? (
+        // Equal-width columns (`minmax(220px,1fr)`) are enough here: every `VideoCard` already reserves
+        // a fixed title/metadata height and fills its own grid cell via an internal `h-full` chain
+        // (see that component's doc comment), so every card's natural size is identical regardless of
+        // its row — no `grid-auto-rows`/stretch override is needed on top of that (owner feedback:
+        // cards must all be the same size).
         <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
           {filteredFiles.map((file) => (
             <VideoCard
@@ -373,6 +330,7 @@ export function LibraryView() {
               onSelect={handleCardSelect}
               onToggleSelect={toggleSelected}
               selected={selected.has(file.path)}
+              anySelected={selected.size > 0}
             />
           ))}
         </div>

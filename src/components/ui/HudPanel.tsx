@@ -3,6 +3,13 @@ import { createPortal } from "react-dom";
 import { Info } from "lucide-react";
 import { IconButton } from "./IconButton";
 import type { HudAccent } from "./hudButton";
+import { computePopoverPlacement } from "../../lib/popoverPlacement";
+
+/** The info popover isn't rendered yet when its position is computed, so its height can't be measured —
+ * this is the best-guess estimate `computePopoverPlacement` flips/clamps against. Width matches the
+ * popover's own fixed `w-[300px]`; height is a conservative few-lines-of-`leading-relaxed`-text guess
+ * (P2.5). */
+const ESTIMATED_SIZE = { width: 300, height: 120 };
 
 interface HudPanelProps {
   accent?: HudAccent;
@@ -18,11 +25,21 @@ interface HudPanelProps {
  * HUD primitive (ADR-APP-026) — no raw button, no native tooltip. */
 function InfoButton({ info }: { info: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [pos, setPos] = useState({ top: 0, left: 0, above: false });
   const toggle = (e: MouseEvent<HTMLButtonElement>) => {
     if (!open) {
       const r = e.currentTarget.getBoundingClientRect();
-      setPos({ top: r.bottom + 6, left: Math.max(8, r.right - 300) });
+      // Right-aligned to the trigger ("end"): mirrors the previous `r.right - 300` anchor, now also
+      // flipping above and clamping via the shared util so a panel near the bottom of the window
+      // doesn't run the popover off-screen (P2.5).
+      setPos(
+        computePopoverPlacement(
+          r,
+          ESTIMATED_SIZE,
+          { width: window.innerWidth, height: window.innerHeight },
+          { align: "end" },
+        ),
+      );
     }
     setOpen((o) => !o);
   };
@@ -33,7 +50,7 @@ function InfoButton({ info }: { info: ReactNode }) {
         variant="ghost"
         tooltip={null}
         onClick={toggle}
-        className="text-dim shrink-0"
+        className="shrink-0"
       >
         <Info size={14} strokeWidth={2} />
       </IconButton>

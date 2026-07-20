@@ -50,7 +50,7 @@ export function CrashNotice() {
         variant="ghost"
         tooltip={t("crashNotice.dismiss")}
         onClick={() => setDismissed(true)}
-        className="text-dim shrink-0"
+        className="shrink-0"
       >
         <X size={14} strokeWidth={2} />
       </IconButton>

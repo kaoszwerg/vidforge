@@ -81,7 +81,7 @@ function JobRow({ job }: { job: JobDto }) {
         />
         <span className="text-fg min-w-0 flex-1 truncate text-xs">{job.input_name}</span>
         <span
-          className={`shrink-0 font-mono text-[9px] tracking-wider uppercase ${hudAccentTextClass(accent)}`}
+          className={`shrink-0 font-mono text-[10px] tracking-wider uppercase ${hudAccentTextClass(accent)}`}
         >
           {t(stateLabelKey(job.state))}
         </span>
@@ -201,7 +201,7 @@ export function JobsIndicator({ jobs }: { jobs: UseJobsResult }) {
               >
                 <div
                   className="hud-label shrink-0 px-3 py-2"
-                  style={{ "--hud-label-size": "0.65rem" } as CSSProperties}
+                  style={{ "--hud-label-size": "0.625rem" } as CSSProperties}
                 >
                   {t("jobs.popover.title")}
                 </div>
@@ -219,7 +219,7 @@ export function JobsIndicator({ jobs }: { jobs: UseJobsResult }) {
                       ) : null}
                       {recent.length > 0 ? (
                         <>
-                          <div className="text-dim mt-2 mb-1 font-mono text-[9px] tracking-widest uppercase">
+                          <div className="text-dim mt-2 mb-1 font-mono text-[10px] tracking-widest uppercase">
                             {t("jobs.popover.recent")}
                           </div>
                           <ul className="divide-elevated divide-y">

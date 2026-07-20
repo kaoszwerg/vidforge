@@ -9,6 +9,7 @@ import {
 import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 import { hudAccentTextClass, hudButtonClass, type HudAccent } from "./hudButton";
+import { computePopoverPlacement } from "../../lib/popoverPlacement";
 
 export interface SelectOption<T extends string> {
   value: T;
@@ -32,8 +33,9 @@ export interface SelectProps<T extends string> {
  * HUD dropdown select (ADR-APP-026): the replacement for the native `<select>`, whose OS-drawn popup
  * is a visual break in the HUD. A chamfered trigger button (built on `hudButtonClass`, matching
  * `Button`/`IconButton`) opens a portal-rendered listbox, mirroring the `Tooltip` /
- * `HudPanel`'s info-popover pattern: fixed-positioned from the trigger's own rect, closed by an
- * outside click or Escape.
+ * `HudPanel`'s info-popover pattern: fixed-positioned from the trigger's own rect via the shared
+ * `computePopoverPlacement` (P2.5 — flips above the trigger and clamps horizontally so a `Select` near
+ * the bottom or a side of the window never clips), closed by an outside click or Escape.
  *
  * Keyboard focus never leaves the trigger — this is the ARIA 1.2 "collapsible listbox" pattern, the
  * same one a native `<select>` implements. Up/Down move a highlighted option tracked via
@@ -50,7 +52,7 @@ export function Select<T extends string>({
 }: SelectProps<T>) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 });
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0, above: false });
   const triggerRef = useRef<HTMLButtonElement>(null);
   const baseId = useId();
   const listboxId = `${baseId}-listbox`;
@@ -68,7 +70,18 @@ export function Select<T extends string>({
     const el = triggerRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    setPos({ top: r.bottom + 6, left: r.left, width: r.width });
+    // The listbox isn't rendered yet, so its height can't be measured — estimate it from the option
+    // count against the same per-row size the `li`s render at (`px-3 py-1.5` + text-xs), capped at the
+    // CSS `max-h-60` (240px) the list itself enforces, so the estimate never exceeds what could ever
+    // actually render.
+    const estimatedHeight = Math.min(240, options.length * 32 + 8);
+    const placement = computePopoverPlacement(
+      r,
+      { width: r.width, height: estimatedHeight },
+      { width: window.innerWidth, height: window.innerHeight },
+      { align: "start" },
+    );
+    setPos({ top: placement.top, left: placement.left, width: r.width, above: placement.above });
     setActiveIndex(selectedIndex);
     setOpen(true);
   };
@@ -128,7 +141,7 @@ export function Select<T extends string>({
         <span
           id={labelId}
           className="hud-label"
-          style={{ "--hud-label-size": "0.7rem" } as CSSProperties}
+          style={{ "--hud-label-size": "0.6875rem" } as CSSProperties}
         >
           {label}
         </span>

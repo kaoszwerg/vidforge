@@ -152,15 +152,29 @@ describe("VideoPlayer", () => {
     expect(await screen.findByText("0:42")).toBeInTheDocument();
   });
 
+  it("puts the seek bar's flex sizing on its wrapper, not on the slider primitive (regression)", async () => {
+    // Regression guard for the collapsed-to-a-dot bug: `Slider` forces `w-full`, so passing `flex-1`
+    // straight to it produced two competing width utilities and the seek bar rendered as a dot while the
+    // volume bar blew up to full width. The sizing must live on the wrapper; the slider only fills it.
+    mockPlayer({ isPending: false, source: READY_SOURCE });
+    renderPlayer();
+    const seek = await screen.findByRole("slider", { name: "Wiedergabeposition" });
+    expect(seek.className).not.toContain("flex-1");
+    expect(seek.parentElement?.className).toContain("flex-1");
+  });
+
   it("hides the volume slider below the sm breakpoint but keeps the mute button", async () => {
     mockPlayer({ isPending: false, source: READY_SOURCE });
     renderPlayer();
     const muteBtn = await screen.findByRole("button", { name: "Stummschalten" });
     expect(muteBtn.className).not.toContain("hidden");
 
-    const volumeSlider = screen.getByRole("slider", { name: "Lautstärke" });
-    expect(volumeSlider.className).toContain("hidden");
-    expect(volumeSlider.className).toContain("sm:block");
+    // The responsive hide lives on the slider's sizing wrapper, not the slider primitive itself: the
+    // `Slider` forces its own `w-full`, so width/visibility classes must sit on the wrapper to avoid a
+    // width-utility collision (the bug that collapsed the seek bar to a dot). Assert on that wrapper.
+    const volumeWrapper = screen.getByRole("slider", { name: "Lautstärke" }).parentElement;
+    expect(volumeWrapper?.className).toContain("hidden");
+    expect(volumeWrapper?.className).toContain("sm:block");
   });
 
   it("mutes and unmutes via the mute button", async () => {
